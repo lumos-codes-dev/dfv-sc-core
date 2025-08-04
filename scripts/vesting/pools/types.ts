@@ -18,3 +18,11 @@ export interface Schedule {
   periodDuration: number;
   periodCount: number;
 }
+
+export interface CreateCustomVestingPoolParams {
+  beneficiary: string;
+  amount: bigint;
+  start: number;
+  schedule: Schedule;
+  initialUnlock: bigint;
+}
