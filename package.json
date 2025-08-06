@@ -1,0 +1,33 @@
+{
+  "name": "dfv-sc-core",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/lumos-codes-dev/dfv-sc-core#readme",
+  "bugs": {
+    "url": "https://github.com/lumos-codes-dev/dfv-sc-core/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lumos-codes-dev/dfv-sc-core.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "hardhat test",
+    "test:coverage": "hardhat coverage",
+    "compile": "hardhat compile",
+    "coverage": "hardhat coverage"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "hardhat": "^2.26.1"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "@openzeppelin/contracts-upgradeable": "^5.4.0",
+    "@openzeppelin/hardhat-upgrades": "^3.9.1",
+    "dotenv": "^17.2.1"
+  }
+}
