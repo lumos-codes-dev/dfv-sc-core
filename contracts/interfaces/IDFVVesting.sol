@@ -22,13 +22,13 @@ interface IDFVVesting {
     /// @param amount The total amount of tokens to be vested.
     /// @param start The timestamp when the vesting timeline starts.
     /// @param schedule The vesting schedule.
-    /// @param initialUnlock The percentage of tokens that can be claimed immediately after the cliff.
+    /// @param initialUnlockPercent The percentage of tokens that can be claimed immediately after the cliff.
     /// @param claimed The amount of tokens that have already been claimed.
     struct Pool {
         uint256 amount;
         uint256 start;
         Schedule schedule;
-        uint256 initialUnlock;
+        uint256 initialUnlockPercent;
         uint256 claimed;
         bool isCategory;
     }
@@ -47,13 +47,13 @@ interface IDFVVesting {
     /// @param totalVestedAmountLeft The total amount of tokens left to be vested for this category.
     /// @param beneficiariesLeft The number of beneficiaries left for this category.
     /// @param schedule The vesting schedule defining cliff duration and vesting periods.
-    /// @param initialUnlock The percentage of tokens that can be claimed immediately after the cliff.
+    /// @param initialUnlockPercent The percentage of tokens that can be claimed immediately after the cliff.
     struct CategoryRules {
         uint256 totalVestedAmountLeft;
         uint256 qty;
         uint256 beneficiariesLeft;
         Schedule schedule;
-        uint256 initialUnlock;
+        uint256 initialUnlockPercent;
     }
 
     /// @notice Structure to define parameters for creating a custom vesting pool
@@ -61,13 +61,14 @@ interface IDFVVesting {
     /// @param amount The total amount of tokens to be vested for the beneficiary.
     /// @param start The timestamp when the vesting timeline starts for the beneficiary.
     /// @param schedule The vesting schedule defining cliff duration and vesting periods.
-    /// @param initialUnlock The percentage of tokens that can be claimed immediately after the cliff (in basis points).
+    /// @param initialUnlockPercent The percentage of tokens that can be claimed immediately
+    /// after the cliff (in basis points).
     struct CreateCustomVestingPoolParams {
         address beneficiary;
         uint256 amount;
         uint256 start;
         Schedule schedule;
-        uint256 initialUnlock;
+        uint256 initialUnlockPercent;
     }
 
     /// @notice Structure to define parameters for creating a category pool
