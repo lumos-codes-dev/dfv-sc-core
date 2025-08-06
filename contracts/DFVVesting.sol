@@ -60,10 +60,9 @@ contract DFVVesting is IDFVVesting, AccessControl {
     }
 
     /// @notice Constructor to initialize the vesting contract with the token address and set up initial categories
-    /// @param token_ The address of the token to be vested
     /// @param dao_ The address of the DAO contract which will have the DEFAULT_ADMIN_ROLE
     /// @param vestingManager_ The address of the vesting manager who will have the VESTING_MANAGER_ROLE
-    constructor(address token_, address dao_, address vestingManager_) onlyNonZeroAddress(token_) {
+    constructor(address dao_, address vestingManager_) onlyNonZeroAddress(dao_) onlyNonZeroAddress(vestingManager_) {
         blindBelieversAddresses = [
             0x5279d4F55096a427b9121c6D642395a4f0Cd04a4,
             0x250e6E64276D5e9a1cA0B6C5B2B11c5139CD1Fc7,
@@ -97,8 +96,6 @@ contract DFVVesting is IDFVVesting, AccessControl {
             0x147EC80822AFD4C6bC13aC116Ce3ae886099AB47
         ];
 
-        token = IERC20(token_);
-
         _grantRole(DEFAULT_ADMIN_ROLE, dao_);
         _grantRole(VESTING_MANAGER_ROLE, dao_);
         _grantRole(VESTING_MANAGER_ROLE, vestingManager_);
@@ -121,6 +118,15 @@ contract DFVVesting is IDFVVesting, AccessControl {
                 ++i;
             }
         }
+    }
+
+    /// @notice Function to set the vesting token
+    /// @param token_ The address of the token to be vested
+    function setVestingToken(
+        IERC20 token_
+    ) external onlyRole(VESTING_MANAGER_ROLE) onlyNonZeroAddress(address(token_)) {
+        require(address(token) == address(0), TokenAlreadySet());
+        token = token_;
     }
 
     /// @notice Function to create a new vesting pool for a specific category
@@ -190,7 +196,7 @@ contract DFVVesting is IDFVVesting, AccessControl {
         uint256 amount = token_.balanceOf(address(this));
 
         if (address(token_) == address(token)) {
-            amount -= totalVested;
+            amount = amount > totalVested ? amount - totalVested : 0;
         }
 
         require(amount != 0, ZeroAmount());

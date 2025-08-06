@@ -125,6 +125,9 @@ interface IDFVVesting {
     /// @param category The vesting category for which there are no beneficiaries left
     error CategoryBeneficiariesAllSet(VestingCategory category);
 
+    /// @dev Error thrown when the vesting token is already set and cannot be changed
+    error TokenAlreadySet();
+
     /// @notice Function to create a new vesting pool
     /// @param params_ The parameters for creating a custom vesting pool
     /// @dev See `CreateCustomVestingPoolParams` for details on the parameters

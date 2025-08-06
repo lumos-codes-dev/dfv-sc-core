@@ -19,7 +19,7 @@ describe("DFVToken", function () {
     [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 
     const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
-    dfvToken = await DFVTokenFactory.deploy();
+    dfvToken = await DFVTokenFactory.deploy(owner.address);
     await dfvToken.waitForDeployment();
   });
 
@@ -36,9 +36,10 @@ describe("DFVToken", function () {
       expect(await dfvToken.decimals()).to.equal(EXPECTED_DECIMALS);
     });
 
-    it("Should mint the initial supply to the deployer", async function () {
-      const ownerBalance = await dfvToken.balanceOf(owner.address);
-      expect(ownerBalance).to.equal(INITIAL_SUPPLY);
+    it("Should mint the initial supply to the vesting address", async function () {
+      const vestingAddress = owner.address;
+      const vestingBalance = await dfvToken.balanceOf(vestingAddress);
+      expect(vestingBalance).to.equal(INITIAL_SUPPLY);
     });
 
     it("Should set the total supply to the initial supply", async function () {
