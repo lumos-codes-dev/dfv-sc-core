@@ -34,6 +34,23 @@ contract DFVToken is ERC20, ERC20Permit, ERC20Votes {
     }
 
     /**
+     * @notice Function to get the current timepoint for voting power tracking
+     * @return The current timestamp
+     */
+    function clock() public view override returns (uint48) {
+        return uint48(block.timestamp);
+    }
+
+    /**
+     * @notice Function to describe the clock mode for voting power tracking
+     * @return The clock mode description
+     */
+    // solhint-disable-next-line func-name-mixedcase
+    function CLOCK_MODE() public pure override returns (string memory) {
+        return "mode=timestamp";
+    }
+
+    /**
      * @notice Function override the _update function to ensure compatibility with ERC20Votes
      * @param from_ The address from which tokens are being transferred
      * @param to_ The address to which tokens are being transferred
