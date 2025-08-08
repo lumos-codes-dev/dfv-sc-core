@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { VestingCategory, CreateCategoryPoolParams } from "../types";
+import { VestingCategory, CreateCategoryPoolParams } from "../../../create-vesting-pools/types";
 
 import { list } from "./beneficiaries/BlindBelievers.beneficiaries";
 

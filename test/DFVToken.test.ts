@@ -19,7 +19,7 @@ describe("DFVToken", function () {
     [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 
     const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
-    dfvToken = await DFVTokenFactory.deploy();
+    dfvToken = await DFVTokenFactory.deploy(owner.address, owner.address, owner.address, owner.address);
     await dfvToken.waitForDeployment();
   });
 
@@ -36,9 +36,10 @@ describe("DFVToken", function () {
       expect(await dfvToken.decimals()).to.equal(EXPECTED_DECIMALS);
     });
 
-    it("Should mint the initial supply to the deployer", async function () {
-      const ownerBalance = await dfvToken.balanceOf(owner.address);
-      expect(ownerBalance).to.equal(INITIAL_SUPPLY);
+    it("Should mint the initial supply to the vesting address", async function () {
+      const vestingAddress = owner.address;
+      const vestingBalance = await dfvToken.balanceOf(vestingAddress);
+      expect(vestingBalance).to.equal(INITIAL_SUPPLY);
     });
 
     it("Should set the total supply to the initial supply", async function () {
@@ -236,6 +237,196 @@ describe("DFVToken", function () {
       const receipt = await tx.wait();
 
       expect(receipt?.gasUsed).to.be.lessThan(100000);
+    });
+  });
+
+  describe("ERC20Permit and Governance Functions", function () {
+    describe("Nonces", function () {
+      it("Should return zero nonce for new addresses", async function () {
+        expect(await dfvToken.nonces(addr1.address)).to.equal(0);
+        expect(await dfvToken.nonces(addr2.address)).to.equal(0);
+      });
+
+      it("Should return correct nonce for owner", async function () {
+        const initialNonce = await dfvToken.nonces(owner.address);
+        expect(initialNonce).to.equal(0);
+      });
+
+      it("Should increment nonce after permit usage", async function () {
+        const spender = addr1.address;
+        const value = ethers.parseEther("1000");
+
+        const latestBlock = await ethers.provider.getBlock("latest");
+        const deadline = (latestBlock?.timestamp || 0) + 3600;
+
+        const initialNonce = await dfvToken.nonces(owner.address);
+        expect(initialNonce).to.equal(0);
+
+        const domain = {
+          name: await dfvToken.name(),
+          version: "1",
+          chainId: (await ethers.provider.getNetwork()).chainId,
+          verifyingContract: await dfvToken.getAddress(),
+        };
+
+        const types = {
+          Permit: [
+            { name: "owner", type: "address" },
+            { name: "spender", type: "address" },
+            { name: "value", type: "uint256" },
+            { name: "nonce", type: "uint256" },
+            { name: "deadline", type: "uint256" },
+          ],
+        };
+
+        const values = {
+          owner: owner.address,
+          spender: spender,
+          value: value,
+          nonce: initialNonce,
+          deadline: deadline,
+        };
+
+        const signature = await owner.signTypedData(domain, types, values);
+        const { v, r, s } = ethers.Signature.from(signature);
+
+        await dfvToken.permit(owner.address, spender, value, deadline, v, r, s);
+
+        const newNonce = await dfvToken.nonces(owner.address);
+        expect(newNonce).to.equal(initialNonce + 1n);
+
+        expect(await dfvToken.allowance(owner.address, spender)).to.equal(value);
+      });
+
+      it("Should handle multiple nonce increments", async function () {
+        const spender = addr1.address;
+        const value = ethers.parseEther("1000");
+
+        for (let i = 0; i < 3; i++) {
+          const latestBlock = await ethers.provider.getBlock("latest");
+          const deadline = (latestBlock?.timestamp || 0) + 3600;
+          const nonce = await dfvToken.nonces(owner.address);
+
+          const domain = {
+            name: await dfvToken.name(),
+            version: "1",
+            chainId: (await ethers.provider.getNetwork()).chainId,
+            verifyingContract: await dfvToken.getAddress(),
+          };
+
+          const types = {
+            Permit: [
+              { name: "owner", type: "address" },
+              { name: "spender", type: "address" },
+              { name: "value", type: "uint256" },
+              { name: "nonce", type: "uint256" },
+              { name: "deadline", type: "uint256" },
+            ],
+          };
+
+          const values = {
+            owner: owner.address,
+            spender: spender,
+            value: value,
+            nonce: nonce,
+            deadline: deadline,
+          };
+
+          const signature = await owner.signTypedData(domain, types, values);
+          const { v, r, s } = ethers.Signature.from(signature);
+
+          await dfvToken.permit(owner.address, spender, value, deadline, v, r, s);
+
+          expect(await dfvToken.nonces(owner.address)).to.equal(BigInt(i + 1));
+        }
+      });
+
+      it("Should fail permit with wrong nonce", async function () {
+        const spender = addr1.address;
+        const value = ethers.parseEther("1000");
+        const latestBlock = await ethers.provider.getBlock("latest");
+        const deadline = (latestBlock?.timestamp || 0) + 3600;
+        const wrongNonce = 999;
+
+        const domain = {
+          name: await dfvToken.name(),
+          version: "1",
+          chainId: (await ethers.provider.getNetwork()).chainId,
+          verifyingContract: await dfvToken.getAddress(),
+        };
+
+        const types = {
+          Permit: [
+            { name: "owner", type: "address" },
+            { name: "spender", type: "address" },
+            { name: "value", type: "uint256" },
+            { name: "nonce", type: "uint256" },
+            { name: "deadline", type: "uint256" },
+          ],
+        };
+
+        const values = {
+          owner: owner.address,
+          spender: spender,
+          value: value,
+          nonce: wrongNonce,
+          deadline: deadline,
+        };
+
+        const signature = await owner.signTypedData(domain, types, values);
+        const { v, r, s } = ethers.Signature.from(signature);
+
+        await expect(dfvToken.permit(owner.address, spender, value, deadline, v, r, s)).to.be.revertedWithCustomError(
+          dfvToken,
+          "ERC2612InvalidSigner"
+        );
+      });
+    });
+
+    describe("CLOCK_MODE", function () {
+      it("Should return correct clock mode", async function () {
+        const clockMode = await dfvToken.CLOCK_MODE();
+        expect(clockMode).to.equal("mode=timestamp");
+      });
+
+      it("Should be consistent with clock function", async function () {
+        const clockMode = await dfvToken.CLOCK_MODE();
+        const currentClock = await dfvToken.clock();
+
+        expect(clockMode).to.equal("mode=timestamp");
+
+        const latestBlock = await ethers.provider.getBlock("latest");
+        const blockTimestamp = latestBlock?.timestamp || 0;
+        const clockValue = Number(currentClock);
+
+        expect(clockValue).to.equal(blockTimestamp);
+      });
+
+      it("Should return timestamp-based clock value", async function () {
+        const clock1 = await dfvToken.clock();
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        const clock2 = await dfvToken.clock();
+
+        expect(clock2).to.be.greaterThanOrEqual(clock1);
+      });
+    });
+
+    describe("Clock Function", function () {
+      it("Should return current timestamp", async function () {
+        const blockTimestamp = (await ethers.provider.getBlock("latest"))?.timestamp || 0;
+        const clockValue = await dfvToken.clock();
+
+        expect(Number(clockValue)).to.equal(blockTimestamp);
+      });
+
+      it("Should return uint48 timestamp", async function () {
+        const clockValue = await dfvToken.clock();
+
+        expect(clockValue).to.be.lessThan(281474976710656n);
+        expect(clockValue).to.be.greaterThan(0);
+      });
     });
   });
 });

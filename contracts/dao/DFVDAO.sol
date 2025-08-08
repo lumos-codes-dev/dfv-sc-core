@@ -66,6 +66,19 @@ contract DFVDAO is
         return super.proposalNeedsQueuing(proposalId);
     }
 
+    /// @notice Function to get the current timepoint for voting
+    /// @return The current timestamp
+    function clock() public view override(Governor, GovernorVotes) returns (uint48) {
+        return uint48(block.timestamp);
+    }
+
+    /// @notice Function to describe the clock mode
+    /// @return The clock mode description
+    // solhint-disable-next-line func-name-mixedcase
+    function CLOCK_MODE() public pure override(Governor, GovernorVotes) returns (string memory) {
+        return "mode=timestamp";
+    }
+
     /// @notice Function to queue operations for a proposal
     /// @param proposalId The ID of the proposal to queue
     /// @param targets The addresses of the contracts to call
