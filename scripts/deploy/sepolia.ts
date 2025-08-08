@@ -1,4 +1,5 @@
 import { ethers } from "hardhat";
+import hre from "hardhat";
 
 async function main() {
   console.log("Starting DFVDAO deployment to Sepolia...\n");
@@ -89,6 +90,154 @@ async function main() {
   console.log("Proposal Threshold:", ethers.formatEther(PROPOSAL_THRESHOLD), "DFV");
   console.log("Quorum:", QUORUM_PERCENTAGE, "%");
   console.log("Timelock Delay:", MIN_DELAY, "seconds (", MIN_DELAY / 3600, "hours)");
+
+  // Step 8: Verify contracts on Etherscan
+  // Note: Make sure ETHERSCAN_API_KEY is set in your .env file
+  // You can get a free API key from https://etherscan.io/apis
+  console.log("\n=== VERIFYING CONTRACTS ON ETHERSCAN ===");
+  console.log("Note: This requires ETHERSCAN_API_KEY to be set in .env file");
+
+  if (!process.env.ETHERSCAN_API_KEY) {
+    console.log("⚠️  ETHERSCAN_API_KEY not found in environment variables");
+    console.log("Skipping Etherscan verification. You can verify manually later.");
+    console.log("Get your API key from: https://etherscan.io/apis");
+
+    console.log("\n📋 Manual verification commands:");
+    console.log(
+      `npx hardhat verify --network sepolia ${await timeLock.getAddress()} ${MIN_DELAY} "[]" "[]" "${deployer.address}"`
+    );
+    console.log(
+      `npx hardhat verify --network sepolia ${await dfvVesting.getAddress()} "${deployer.address}" "${CLIENT_ADDRESS}"`
+    );
+    console.log(
+      `npx hardhat verify --network sepolia ${await dfvToken.getAddress()} "${
+        dfvVesting.target
+      }" "${TREASURY_ADDRESS}" "${TEAM_ADDRESS}" "${VC_ADDRESS}"`
+    );
+    console.log(
+      `npx hardhat verify --network sepolia ${await dfvDAO.getAddress()} "${await dfvToken.getAddress()}" "${await timeLock.getAddress()}" ${VOTING_DELAY} ${VOTING_PERIOD} "${PROPOSAL_THRESHOLD.toString()}" ${QUORUM_PERCENTAGE}`
+    );
+  } else {
+    try {
+      // Wait a bit for the contracts to be indexed by Etherscan
+      console.log("Waiting for Etherscan to index the contracts...");
+      await new Promise((resolve) => setTimeout(resolve, 30000)); // Wait 30 seconds
+
+      // Verify TimeLock
+      console.log("\n8.1. Verifying TimeLock...");
+      try {
+        await hre.run("verify:verify", {
+          address: await timeLock.getAddress(),
+          constructorArguments: [
+            MIN_DELAY,
+            [], // proposers
+            [], // executors
+            deployer.address, // admin
+          ],
+        });
+        console.log("✅ TimeLock verified on Etherscan");
+      } catch (error: any) {
+        if (error.message.includes("Already Verified")) {
+          console.log("✅ TimeLock already verified on Etherscan");
+        } else {
+          console.log("❌ TimeLock verification failed:", error.message);
+        }
+      }
+
+      // Verify DFVVesting
+      console.log("\n8.2. Verifying DFVVesting...");
+      try {
+        await hre.run("verify:verify", {
+          address: await dfvVesting.getAddress(),
+          constructorArguments: [
+            deployer.address, // dao
+            CLIENT_ADDRESS, // client
+          ],
+        });
+        console.log("✅ DFVVesting verified on Etherscan");
+      } catch (error: any) {
+        if (error.message.includes("Already Verified")) {
+          console.log("✅ DFVVesting already verified on Etherscan");
+        } else {
+          console.log("❌ DFVVesting verification failed:", error.message);
+        }
+      }
+
+      // Verify DFVToken
+      console.log("\n8.3. Verifying DFVToken...");
+      try {
+        await hre.run("verify:verify", {
+          address: await dfvToken.getAddress(),
+          constructorArguments: [dfvVesting.target, TREASURY_ADDRESS, TEAM_ADDRESS, VC_ADDRESS],
+        });
+        console.log("✅ DFVToken verified on Etherscan");
+      } catch (error: any) {
+        if (error.message.includes("Already Verified")) {
+          console.log("✅ DFVToken already verified on Etherscan");
+        } else {
+          console.log("❌ DFVToken verification failed:", error.message);
+        }
+      }
+
+      // Verify DFVDAO
+      console.log("\n8.4. Verifying DFVDAO...");
+      try {
+        await hre.run("verify:verify", {
+          address: await dfvDAO.getAddress(),
+          constructorArguments: [
+            await dfvToken.getAddress(),
+            await timeLock.getAddress(),
+            VOTING_DELAY,
+            VOTING_PERIOD,
+            PROPOSAL_THRESHOLD,
+            QUORUM_PERCENTAGE,
+          ],
+        });
+        console.log("✅ DFVDAO verified on Etherscan");
+      } catch (error: any) {
+        if (error.message.includes("Already Verified")) {
+          console.log("✅ DFVDAO already verified on Etherscan");
+        } else {
+          console.log("❌ DFVDAO verification failed:", error.message);
+        }
+      }
+
+      console.log("\n🎉 Etherscan verification process completed!");
+    } catch (error) {
+      console.error("\n❌ Error during Etherscan verification:", error);
+      console.log("You can manually verify the contracts later using the following constructor arguments:");
+
+      console.log("\nTimeLock constructor arguments:");
+      console.log("- minDelay:", MIN_DELAY);
+      console.log("- proposers: []");
+      console.log("- executors: []");
+      console.log("- admin:", deployer.address);
+
+      console.log("\nDFVVesting constructor arguments:");
+      console.log("- dao:", deployer.address);
+      console.log("- client:", CLIENT_ADDRESS);
+
+      console.log("\nDFVToken constructor arguments:");
+      console.log("- vestingContract:", dfvVesting.target);
+      console.log("- treasury:", TREASURY_ADDRESS);
+      console.log("- team:", TEAM_ADDRESS);
+      console.log("- vc:", VC_ADDRESS);
+
+      console.log("\nDFVDAO constructor arguments:");
+      console.log("- token:", await dfvToken.getAddress());
+      console.log("- timelock:", await timeLock.getAddress());
+      console.log("- votingDelay:", VOTING_DELAY);
+      console.log("- votingPeriod:", VOTING_PERIOD);
+      console.log("- proposalThreshold:", PROPOSAL_THRESHOLD.toString());
+      console.log("- quorumPercentage:", QUORUM_PERCENTAGE);
+    }
+  } // Close the if statement for ETHERSCAN_API_KEY check
+
+  console.log("\n=== ETHERSCAN LINKS ===");
+  console.log("TimeLock:", `https://sepolia.etherscan.io/address/${await timeLock.getAddress()}`);
+  console.log("DFVVesting:", `https://sepolia.etherscan.io/address/${await dfvVesting.getAddress()}`);
+  console.log("DFVToken:", `https://sepolia.etherscan.io/address/${await dfvToken.getAddress()}`);
+  console.log("DFVDAO:", `https://sepolia.etherscan.io/address/${await dfvDAO.getAddress()}`);
 
   console.log("\nDeployment completed successfully!");
 }
