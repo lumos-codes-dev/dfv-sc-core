@@ -1,12 +1,25 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { DFVDAO, GovernanceToken, TimeLock, DFVToken, DFVVesting } from "../typechain-types";
+import { DFVDAO, TimeLock, DFVToken, DFVVesting } from "../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { time, mine } from "@nomicfoundation/hardhat-network-helpers";
+import { time } from "@nomicfoundation/hardhat-network-helpers";
+
+interface Schedule {
+  cliffDuration: number;
+  periodDuration: number;
+  periodCount: number;
+}
+
+interface CreateCustomVestingPoolParams {
+  beneficiary: string;
+  amount: bigint;
+  start: number;
+  schedule: Schedule;
+  initialUnlockPercent: number;
+}
 
 describe("DFVDAO", function () {
   let dfvDAO: DFVDAO;
-  let governanceToken: GovernanceToken;
   let timeLock: TimeLock;
   let dfvToken: DFVToken;
   let dfvVesting: DFVVesting;
@@ -17,47 +30,36 @@ describe("DFVDAO", function () {
   let recipient: SignerWithAddress;
   let addrs: SignerWithAddress[];
 
-  const VOTING_DELAY = 1; // 1 block
-  const VOTING_PERIOD = 5; // 5 blocks
-  const PROPOSAL_THRESHOLD = ethers.parseEther("100000"); // 100k tokens
-  const QUORUM_PERCENTAGE = 4; // 4%
-  const MIN_DELAY = 3600; // 1 hour in seconds
-  const GOVERNANCE_INITIAL_SUPPLY = ethers.parseEther("10000000"); // 10M tokens
-  const TRANSFER_AMOUNT = ethers.parseEther("1000"); // Amount to transfer via DAO
+  const VOTING_DELAY = 86400;
+  const VOTING_PERIOD = 432000;
+  const PROPOSAL_THRESHOLD = ethers.parseEther("100000");
+  const QUORUM_PERCENTAGE = 4;
+  const MIN_DELAY = 3600;
+
+  const GOVERNANCE_INITIAL_SUPPLY = ethers.parseEther("138840000000");
+  const TRANSFER_AMOUNT = ethers.parseEther("1000");
 
   beforeEach(async function () {
     [owner, proposer, voter1, voter2, recipient, ...addrs] = await ethers.getSigners();
 
     const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
-    const GovernanceTokenFactory = await ethers.getContractFactory("GovernanceToken");
     const TimeLockFactory = await ethers.getContractFactory("TimeLock");
     const DFVDAOFactory = await ethers.getContractFactory("DFVDAO");
     const DFVVestingFactory = await ethers.getContractFactory("DFVVesting");
 
-    dfvToken = await DFVTokenFactory.deploy();
-    await dfvToken.waitForDeployment();
-
-    dfvVesting = await DFVVestingFactory.deploy(await dfvToken.getAddress());
-    await dfvVesting.waitForDeployment();
-
-    governanceToken = await GovernanceTokenFactory.deploy(
-      "DAO Governance Token",
-      "DGT",
-      GOVERNANCE_INITIAL_SUPPLY,
-      owner.address
-    );
-    await governanceToken.waitForDeployment();
-
-    timeLock = await TimeLockFactory.deploy(
-      MIN_DELAY,
-      [], // proposers (will be set to DAO)
-      [], // executors (will be set to DAO)
-      owner.address // admin
-    );
+    timeLock = await TimeLockFactory.deploy(MIN_DELAY, [], [], owner.address);
     await timeLock.waitForDeployment();
 
+    dfvVesting = await DFVVestingFactory.deploy(timeLock.target, owner.address);
+    await dfvVesting.waitForDeployment();
+
+    dfvToken = await DFVTokenFactory.deploy(dfvVesting.target, owner.address, owner.address, owner.address);
+    await dfvToken.waitForDeployment();
+
+    await dfvVesting.setVestingToken(dfvToken.target);
+
     dfvDAO = await DFVDAOFactory.deploy(
-      await governanceToken.getAddress(),
+      await dfvToken.getAddress(),
       await timeLock.getAddress(),
       VOTING_DELAY,
       VOTING_PERIOD,
@@ -69,19 +71,66 @@ describe("DFVDAO", function () {
     await timeLock.grantRole(await timeLock.PROPOSER_ROLE(), await dfvDAO.getAddress());
     await timeLock.grantRole(await timeLock.EXECUTOR_ROLE(), await dfvDAO.getAddress());
 
-    // Revoke admin role from owner
     await timeLock.revokeRole(await timeLock.DEFAULT_ADMIN_ROLE(), owner.address);
-    await dfvVesting.transferOwnership(await timeLock.getAddress());
 
-    await governanceToken.transfer(proposer.address, ethers.parseEther("200000"));
-    await governanceToken.transfer(voter1.address, ethers.parseEther("300000"));
-    await governanceToken.transfer(voter2.address, ethers.parseEther("200000"));
-    await governanceToken.connect(proposer).delegate(proposer.address);
-    await governanceToken.connect(voter1).delegate(voter1.address);
-    await governanceToken.connect(voter2).delegate(voter2.address);
+    const params: CreateCustomVestingPoolParams[] = [
+      {
+        beneficiary: proposer.address,
+        amount: ethers.parseEther("3000000000"),
+        start: 0,
+        schedule: {
+          cliffDuration: 0,
+          periodDuration: 1,
+          periodCount: 1,
+        },
+        initialUnlockPercent: 0,
+      },
+      {
+        beneficiary: voter1.address,
+        amount: ethers.parseEther("2000000000"),
+        start: 0,
+        schedule: {
+          cliffDuration: 0,
+          periodDuration: 1,
+          periodCount: 1,
+        },
+        initialUnlockPercent: 0,
+      },
+      {
+        beneficiary: voter2.address,
+        amount: ethers.parseEther("4000000000"),
+        start: 0,
+        schedule: {
+          cliffDuration: 0,
+          periodDuration: 1,
+          periodCount: 1,
+        },
+        initialUnlockPercent: 0,
+      },
+      {
+        beneficiary: await timeLock.getAddress(),
+        amount: ethers.parseEther("1000"),
+        start: 0,
+        schedule: {
+          cliffDuration: 0,
+          periodDuration: 1,
+          periodCount: 1,
+        },
+        initialUnlockPercent: 0,
+      },
+    ];
 
-    const timelockAddress = await timeLock.getAddress();
-    await dfvToken.transfer(timelockAddress, await dfvToken.totalSupply());
+    await dfvVesting.createCustomVestingPoolBatch(params);
+    await time.increase(2);
+
+    await dfvVesting.connect(proposer).claim();
+    await dfvVesting.connect(voter1).claim();
+    await dfvVesting.connect(voter2).claim();
+    await dfvVesting.claimFor(timeLock.target);
+
+    await dfvToken.connect(proposer).delegate(proposer.address);
+    await dfvToken.connect(voter1).delegate(voter1.address);
+    await dfvToken.connect(voter2).delegate(voter2.address);
   });
 
   describe("Deployment", function () {
@@ -102,16 +151,16 @@ describe("DFVDAO", function () {
     });
 
     it("Should set the correct quorum", async function () {
-      const previousBlock = (await time.latestBlock()) - 1;
-      const totalSupply = await governanceToken.totalSupply();
+      const previousTimestamp = (await time.latest()) - 1;
+      const totalSupply = await dfvToken.totalSupply();
       const expectedQuorum = (totalSupply * BigInt(QUORUM_PERCENTAGE)) / BigInt(100);
 
-      expect(await dfvDAO.quorum(previousBlock)).to.equal(expectedQuorum);
+      expect(await dfvDAO.quorum(previousTimestamp)).to.equal(expectedQuorum);
     });
 
     it("Should have DFVTokens in the timelock for testing", async function () {
       const timelockBalance = await dfvToken.balanceOf(await timeLock.getAddress());
-      expect(timelockBalance).to.equal(ethers.parseEther("138840000000"));
+      expect(timelockBalance).to.equal(TRANSFER_AMOUNT);
     });
   });
 
@@ -155,7 +204,7 @@ describe("DFVDAO", function () {
 
       proposalId = proposalCreatedEvent?.args[0];
 
-      await mine(2);
+      await time.increase(VOTING_DELAY + 1);
     });
 
     it("Should successfully execute a transaction to transfer DFVToken through DAO", async function () {
@@ -165,7 +214,7 @@ describe("DFVDAO", function () {
       await dfvDAO.connect(voter1).castVote(proposalId, 1);
       await dfvDAO.connect(voter2).castVote(proposalId, 1);
 
-      await mine(VOTING_PERIOD + 1);
+      await time.increase(VOTING_PERIOD + 1);
 
       expect(await dfvDAO.state(proposalId)).to.equal(4);
 
@@ -200,8 +249,8 @@ describe("DFVDAO", function () {
       await dfvDAO.connect(voter1).castVote(proposalId, 0);
       await dfvDAO.connect(voter2).castVote(proposalId, 0);
 
-      await mine(VOTING_PERIOD + 1);
-      expect(await dfvDAO.state(proposalId)).to.equal(3); // Defeated
+      await time.increase(VOTING_PERIOD + 1);
+      expect(await dfvDAO.state(proposalId)).to.equal(3);
 
       const transferCalldata = dfvToken.interface.encodeFunctionData("transfer", [recipient.address, TRANSFER_AMOUNT]);
       await expect(
@@ -217,7 +266,7 @@ describe("DFVDAO", function () {
     it("Should fail execution if quorum is not met", async function () {
       await dfvDAO.connect(voter1).castVote(proposalId, 1);
 
-      await mine(VOTING_PERIOD + 1);
+      await time.increase(VOTING_PERIOD + 1);
 
       expect(await dfvDAO.state(proposalId)).to.equal(3);
     });
@@ -226,7 +275,7 @@ describe("DFVDAO", function () {
       await dfvDAO.connect(voter1).castVote(proposalId, 1);
       await dfvDAO.connect(voter2).castVote(proposalId, 1);
 
-      await mine(VOTING_PERIOD + 1);
+      await time.increase(VOTING_PERIOD + 1);
       const transferCalldata = dfvToken.interface.encodeFunctionData("transfer", [recipient.address, TRANSFER_AMOUNT]);
 
       await dfvDAO.queue(
@@ -266,13 +315,13 @@ describe("DFVDAO", function () {
 
       proposalId = proposalCreatedEvent?.args[0];
 
-      await mine(2);
+      await time.increase(VOTING_DELAY + 1);
     });
 
     it("Should allow voting on proposals", async function () {
       await expect(dfvDAO.connect(voter1).castVote(proposalId, 1))
         .to.emit(dfvDAO, "VoteCast")
-        .withArgs(voter1.address, proposalId, 1, await governanceToken.getVotes(voter1.address), "");
+        .withArgs(voter1.address, proposalId, 1, await dfvToken.getVotes(voter1.address), "");
     });
 
     it("Should prevent double voting", async function () {
@@ -289,8 +338,8 @@ describe("DFVDAO", function () {
       await dfvDAO.connect(voter2).castVote(proposalId, 0);
 
       const votes = await dfvDAO.proposalVotes(proposalId);
-      expect(votes.forVotes).to.equal(await governanceToken.getVotes(voter1.address));
-      expect(votes.againstVotes).to.equal(await governanceToken.getVotes(voter2.address));
+      expect(votes.forVotes).to.equal(await dfvToken.getVotes(voter1.address));
+      expect(votes.againstVotes).to.equal(await dfvToken.getVotes(voter2.address));
       expect(votes.abstainVotes).to.equal(0);
     });
   });
@@ -315,10 +364,10 @@ describe("DFVDAO", function () {
       ) as any;
       const approveProposalId = approveProposalEvent?.args[0];
 
-      await mine(2);
+      await time.increase(VOTING_DELAY + 1);
       await dfvDAO.connect(voter1).castVote(approveProposalId, 1);
       await dfvDAO.connect(voter2).castVote(approveProposalId, 1);
-      await mine(VOTING_PERIOD + 1);
+      await time.increase(VOTING_PERIOD + 1);
 
       await dfvDAO.queue(
         [await dfvToken.getAddress()],
@@ -338,7 +387,7 @@ describe("DFVDAO", function () {
 
       const createCategoryPoolCalldata = dfvVesting.interface.encodeFunctionData("createCategoryPool", [
         {
-          category: 0, // BlindBelievers
+          category: 1,
           beneficiary: recipient.address,
           multiplierOrAmount: 1,
           start: Math.floor(Date.now() / 1000) + 3600,
@@ -351,7 +400,7 @@ describe("DFVDAO", function () {
           [await dfvVesting.getAddress()],
           [0],
           [createCategoryPoolCalldata],
-          "Create vesting pool for BlindBelievers category"
+          "Create vesting pool for EternalHODLers category"
         );
 
       const receipt = await tx.wait();
@@ -359,7 +408,7 @@ describe("DFVDAO", function () {
 
       proposalId = proposalCreatedEvent?.args[0];
 
-      await mine(2);
+      await time.increase(VOTING_DELAY + 1);
     });
 
     it("Should successfully execute createCategoryPool through DAO", async function () {
@@ -369,13 +418,13 @@ describe("DFVDAO", function () {
       await dfvDAO.connect(voter1).castVote(proposalId, 1);
       await dfvDAO.connect(voter2).castVote(proposalId, 1);
 
-      await mine(VOTING_PERIOD + 1);
+      await time.increase(VOTING_PERIOD + 1);
 
       expect(await dfvDAO.state(proposalId)).to.equal(4);
 
       const createCategoryPoolCalldata = dfvVesting.interface.encodeFunctionData("createCategoryPool", [
         {
-          category: 0, // BlindBelievers
+          category: 1,
           beneficiary: recipient.address,
           multiplierOrAmount: 1,
           start: Math.floor(Date.now() / 1000) + 3600,
@@ -386,7 +435,7 @@ describe("DFVDAO", function () {
         [await dfvVesting.getAddress()],
         [0],
         [createCategoryPoolCalldata],
-        ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for BlindBelievers category"))
+        ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for EternalHODLers category"))
       );
 
       expect(await dfvDAO.state(proposalId)).to.equal(5);
@@ -397,7 +446,7 @@ describe("DFVDAO", function () {
         [await dfvVesting.getAddress()],
         [0],
         [createCategoryPoolCalldata],
-        ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for BlindBelievers category"))
+        ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for EternalHODLers category"))
       );
 
       expect(await dfvDAO.state(proposalId)).to.equal(7);
@@ -424,11 +473,11 @@ describe("DFVDAO", function () {
       await dfvDAO.connect(voter1).castVote(proposalId, 1);
       await dfvDAO.connect(voter2).castVote(proposalId, 1);
 
-      await mine(VOTING_PERIOD + 1);
+      await time.increase(VOTING_PERIOD + 1);
 
       const createCategoryPoolCalldata = dfvVesting.interface.encodeFunctionData("createCategoryPool", [
         {
-          category: 0, // BlindBelievers
+          category: 1,
           beneficiary: recipient.address,
           multiplierOrAmount: 1,
           start: Math.floor(Date.now() / 1000) + 3600,
@@ -439,7 +488,7 @@ describe("DFVDAO", function () {
         [await dfvVesting.getAddress()],
         [0],
         [createCategoryPoolCalldata],
-        ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for BlindBelievers category"))
+        ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for EternalHODLers category"))
       );
 
       await time.increase(MIN_DELAY + 1);
@@ -449,7 +498,7 @@ describe("DFVDAO", function () {
           [await dfvVesting.getAddress()],
           [0],
           [createCategoryPoolCalldata],
-          ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for BlindBelievers category"))
+          ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for EternalHODLers category"))
         )
       )
         .to.emit(dfvVesting, "VestingPoolCreated")
@@ -460,11 +509,11 @@ describe("DFVDAO", function () {
     it("Should allow recipient to claim vested tokens after DAO creates vesting pool", async function () {
       await dfvDAO.connect(voter1).castVote(proposalId, 1);
       await dfvDAO.connect(voter2).castVote(proposalId, 1);
-      await mine(VOTING_PERIOD + 1);
+      await time.increase(VOTING_PERIOD + 1);
 
       const createCategoryPoolCalldata = dfvVesting.interface.encodeFunctionData("createCategoryPool", [
         {
-          category: 0, // BlindBelievers
+          category: 1,
           beneficiary: recipient.address,
           multiplierOrAmount: 1,
           start: Math.floor(Date.now() / 1000) + 3600,
@@ -475,7 +524,7 @@ describe("DFVDAO", function () {
         [await dfvVesting.getAddress()],
         [0],
         [createCategoryPoolCalldata],
-        ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for BlindBelievers category"))
+        ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for EternalHODLers category"))
       );
 
       await time.increase(MIN_DELAY + 1);
@@ -484,7 +533,7 @@ describe("DFVDAO", function () {
         [await dfvVesting.getAddress()],
         [0],
         [createCategoryPoolCalldata],
-        ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for BlindBelievers category"))
+        ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for EternalHODLers category"))
       );
 
       await time.increase(3600 + 1);
@@ -522,90 +571,220 @@ describe("DFVDAO", function () {
         newClaimableAmountBeforeClaim
       );
     });
+  });
 
-    it("Should fail if DFVVesting contract doesn't have enough tokens", async function () {
-      const transferAllTokensCalldata = dfvToken.interface.encodeFunctionData("transfer", [
-        owner.address,
-        await dfvToken.balanceOf(await timeLock.getAddress()),
-      ]);
+  describe("Governor Functions", function () {
+    describe("proposalNeedsQueuing", function () {
+      let proposalId: bigint;
 
-      const transferProposalTx = await dfvDAO
-        .connect(proposer)
-        .propose([await dfvToken.getAddress()], [0], [transferAllTokensCalldata], "Transfer all tokens away");
+      beforeEach(async function () {
+        const transferCalldata = dfvToken.interface.encodeFunctionData("transfer", [
+          recipient.address,
+          TRANSFER_AMOUNT,
+        ]);
 
-      const transferReceipt = await transferProposalTx.wait();
-      const transferProposalEvent = transferReceipt?.logs.find(
-        (log: any) => log.fragment?.name === "ProposalCreated"
-      ) as any;
-      const transferProposalId = transferProposalEvent?.args[0];
+        const tx = await dfvDAO
+          .connect(proposer)
+          .propose([await dfvToken.getAddress()], [0], [transferCalldata], "Transfer DFV tokens to recipient");
 
-      await mine(2);
-      await dfvDAO.connect(voter1).castVote(transferProposalId, 1);
-      await dfvDAO.connect(voter2).castVote(transferProposalId, 1);
-      await mine(VOTING_PERIOD + 1);
+        const receipt = await tx.wait();
+        const proposalCreatedEvent = receipt?.logs.find((log: any) => log.fragment?.name === "ProposalCreated") as any;
 
-      await dfvDAO.queue(
-        [await dfvToken.getAddress()],
-        [0],
-        [transferAllTokensCalldata],
-        ethers.keccak256(ethers.toUtf8Bytes("Transfer all tokens away"))
-      );
+        proposalId = proposalCreatedEvent?.args[0];
+      });
 
-      await time.increase(MIN_DELAY + 1);
+      it("Should return true for proposals that need queuing", async function () {
+        expect(await dfvDAO.proposalNeedsQueuing(proposalId)).to.equal(true);
+      });
 
-      await dfvDAO.execute(
-        [await dfvToken.getAddress()],
-        [0],
-        [transferAllTokensCalldata],
-        ethers.keccak256(ethers.toUtf8Bytes("Transfer all tokens away"))
-      );
+      it("Should return true for different proposal types", async function () {
+        const createPoolCalldata = dfvVesting.interface.encodeFunctionData("createCategoryPool", [
+          {
+            category: 1,
+            beneficiary: recipient.address,
+            multiplierOrAmount: 1,
+            start: Math.floor(Date.now() / 1000) + 3600,
+          },
+        ]);
 
-      const createCategoryPoolCalldata = dfvVesting.interface.encodeFunctionData("createCategoryPool", [
-        {
-          category: 0, // BlindBelievers
-          beneficiary: recipient.address,
-          multiplierOrAmount: 1,
-          start: Math.floor(Date.now() / 1000) + 3600,
-        },
-      ]);
+        const tx = await dfvDAO
+          .connect(proposer)
+          .propose([await dfvVesting.getAddress()], [0], [createPoolCalldata], "Create vesting pool");
 
-      const newProposalTx = await dfvDAO
-        .connect(proposer)
-        .propose(
-          [await dfvVesting.getAddress()],
-          [0],
-          [createCategoryPoolCalldata],
-          "Create vesting pool for BlindBelievers category - should fail"
-        );
+        const receipt = await tx.wait();
+        const proposalCreatedEvent = receipt?.logs.find((log: any) => log.fragment?.name === "ProposalCreated") as any;
 
-      const newProposalReceipt = await newProposalTx.wait();
-      const newProposalEvent = newProposalReceipt?.logs.find(
-        (log: any) => log.fragment?.name === "ProposalCreated"
-      ) as any;
-      const newProposalId = newProposalEvent?.args[0];
+        const vestingProposalId = proposalCreatedEvent?.args[0];
 
-      await mine(2);
-      await dfvDAO.connect(voter1).castVote(newProposalId, 1);
-      await dfvDAO.connect(voter2).castVote(newProposalId, 1);
-      await mine(VOTING_PERIOD + 1);
+        expect(await dfvDAO.proposalNeedsQueuing(vestingProposalId)).to.equal(true);
+      });
 
-      await dfvDAO.queue(
-        [await dfvVesting.getAddress()],
-        [0],
-        [createCategoryPoolCalldata],
-        ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for BlindBelievers category - should fail"))
-      );
+      it("Should return consistent results for the same proposal", async function () {
+        const needsQueuing1 = await dfvDAO.proposalNeedsQueuing(proposalId);
+        const needsQueuing2 = await dfvDAO.proposalNeedsQueuing(proposalId);
 
-      await time.increase(MIN_DELAY + 1);
+        expect(needsQueuing1).to.equal(needsQueuing2);
+        expect(needsQueuing1).to.equal(true);
+      });
+    });
 
-      await expect(
-        dfvDAO.execute(
-          [await dfvVesting.getAddress()],
-          [0],
-          [createCategoryPoolCalldata],
-          ethers.keccak256(ethers.toUtf8Bytes("Create vesting pool for BlindBelievers category - should fail"))
-        )
-      ).to.be.reverted;
+    describe("CLOCK_MODE", function () {
+      it("Should return correct clock mode", async function () {
+        const clockMode = await dfvDAO.CLOCK_MODE();
+        expect(clockMode).to.equal("mode=timestamp");
+      });
+
+      it("Should be consistent with token clock mode", async function () {
+        const daoClockMode = await dfvDAO.CLOCK_MODE();
+        const tokenClockMode = await dfvToken.CLOCK_MODE();
+
+        expect(daoClockMode).to.equal(tokenClockMode);
+      });
+
+      it("Should be consistent with clock function", async function () {
+        const clockMode = await dfvDAO.CLOCK_MODE();
+        const currentClock = await dfvDAO.clock();
+
+        expect(clockMode).to.equal("mode=timestamp");
+
+        const latestBlock = await ethers.provider.getBlock("latest");
+        const blockTimestamp = latestBlock?.timestamp || 0;
+        const clockValue = Number(currentClock);
+
+        expect(clockValue).to.equal(blockTimestamp);
+      });
+
+      it("Should return string type", async function () {
+        const clockMode = await dfvDAO.CLOCK_MODE();
+        expect(typeof clockMode).to.equal("string");
+        expect(clockMode.length).to.be.greaterThan(0);
+      });
+    });
+
+    describe("cancel functionality", function () {
+      let proposalId: bigint;
+      let targets: string[];
+      let values: number[];
+      let calldatas: string[];
+      let descriptionHash: string;
+
+      beforeEach(async function () {
+        const transferCalldata = dfvToken.interface.encodeFunctionData("transfer", [
+          recipient.address,
+          TRANSFER_AMOUNT,
+        ]);
+
+        targets = [await dfvToken.getAddress()];
+        values = [0];
+        calldatas = [transferCalldata];
+        descriptionHash = ethers.keccak256(ethers.toUtf8Bytes("Transfer DFV tokens to recipient"));
+
+        const tx = await dfvDAO
+          .connect(proposer)
+          .propose(targets, values, calldatas, "Transfer DFV tokens to recipient");
+
+        const receipt = await tx.wait();
+        const proposalCreatedEvent = receipt?.logs.find((log: any) => log.fragment?.name === "ProposalCreated") as any;
+
+        proposalId = proposalCreatedEvent?.args[0];
+      });
+
+      it("Should allow proposer to cancel their own proposal", async function () {
+        expect(await dfvDAO.state(proposalId)).to.equal(0);
+
+        await expect(dfvDAO.connect(proposer).cancel(targets, values, calldatas, descriptionHash))
+          .to.emit(dfvDAO, "ProposalCanceled")
+          .withArgs(proposalId);
+
+        expect(await dfvDAO.state(proposalId)).to.equal(2);
+      });
+
+      it("Should allow cancellation in pending state", async function () {
+        expect(await dfvDAO.state(proposalId)).to.equal(0);
+
+        await expect(dfvDAO.connect(proposer).cancel(targets, values, calldatas, descriptionHash))
+          .to.emit(dfvDAO, "ProposalCanceled")
+          .withArgs(proposalId);
+
+        expect(await dfvDAO.state(proposalId)).to.equal(2);
+      });
+
+      it("Should prevent cancellation during active voting period", async function () {
+        await time.increase(VOTING_DELAY + 1);
+        expect(await dfvDAO.state(proposalId)).to.equal(1);
+
+        await expect(
+          dfvDAO.connect(proposer).cancel(targets, values, calldatas, descriptionHash)
+        ).to.be.revertedWithCustomError(dfvDAO, "GovernorUnableToCancel");
+      });
+
+      it("Should prevent non-proposer from canceling proposal", async function () {
+        await expect(
+          dfvDAO.connect(voter1).cancel(targets, values, calldatas, descriptionHash)
+        ).to.be.revertedWithCustomError(dfvDAO, "GovernorUnableToCancel");
+      });
+
+      it("Should prevent cancellation after proposal is succeeded", async function () {
+        await time.increase(VOTING_DELAY + 1);
+        await dfvDAO.connect(voter1).castVote(proposalId, 1);
+        await dfvDAO.connect(voter2).castVote(proposalId, 1);
+
+        await time.increase(VOTING_PERIOD + 1);
+        expect(await dfvDAO.state(proposalId)).to.equal(4);
+
+        await expect(
+          dfvDAO.connect(proposer).cancel(targets, values, calldatas, descriptionHash)
+        ).to.be.revertedWithCustomError(dfvDAO, "GovernorUnableToCancel");
+      });
+
+      it("Should prevent cancellation after proposal is queued", async function () {
+        await time.increase(VOTING_DELAY + 1);
+        await dfvDAO.connect(voter1).castVote(proposalId, 1);
+        await dfvDAO.connect(voter2).castVote(proposalId, 1);
+
+        await time.increase(VOTING_PERIOD + 1);
+        await dfvDAO.queue(targets, values, calldatas, descriptionHash);
+        expect(await dfvDAO.state(proposalId)).to.equal(5);
+
+        await expect(
+          dfvDAO.connect(proposer).cancel(targets, values, calldatas, descriptionHash)
+        ).to.be.revertedWithCustomError(dfvDAO, "GovernorUnableToCancel");
+      });
+
+      it("Should handle cancellation with multiple operations", async function () {
+        const multiTargets = [await dfvToken.getAddress(), await dfvToken.getAddress()];
+        const multiValues = [0, 0];
+        const multiCalldatas = [
+          dfvToken.interface.encodeFunctionData("transfer", [voter1.address, TRANSFER_AMOUNT / 2n]),
+          dfvToken.interface.encodeFunctionData("transfer", [voter2.address, TRANSFER_AMOUNT / 2n]),
+        ];
+        const multiDescriptionHash = ethers.keccak256(ethers.toUtf8Bytes("Multiple transfers"));
+
+        const tx = await dfvDAO
+          .connect(proposer)
+          .propose(multiTargets, multiValues, multiCalldatas, "Multiple transfers");
+
+        const receipt = await tx.wait();
+        const proposalCreatedEvent = receipt?.logs.find((log: any) => log.fragment?.name === "ProposalCreated") as any;
+        const multiProposalId = proposalCreatedEvent?.args[0];
+
+        await expect(dfvDAO.connect(proposer).cancel(multiTargets, multiValues, multiCalldatas, multiDescriptionHash))
+          .to.emit(dfvDAO, "ProposalCanceled")
+          .withArgs(multiProposalId);
+
+        expect(await dfvDAO.state(multiProposalId)).to.equal(2);
+      });
+
+      it("Should revert when canceling non-existent proposal", async function () {
+        const fakeTargets = [recipient.address];
+        const fakeValues = [0];
+        const fakeCalldatas = ["0x"];
+        const fakeDescriptionHash = ethers.keccak256(ethers.toUtf8Bytes("Fake proposal"));
+
+        await expect(
+          dfvDAO.connect(proposer).cancel(fakeTargets, fakeValues, fakeCalldatas, fakeDescriptionHash)
+        ).to.be.revertedWithCustomError(dfvDAO, "GovernorNonexistentProposal");
+      });
     });
   });
 });
