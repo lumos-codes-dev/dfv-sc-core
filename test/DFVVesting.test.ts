@@ -26,7 +26,7 @@ describe("DFVVesting", function () {
     dfvVesting = await DFVVestingFactory.deploy(owner.address, owner.address);
     await dfvVesting.waitForDeployment();
 
-    dfvToken = await DFVTokenFactory.deploy(dfvVesting.target);
+    dfvToken = await DFVTokenFactory.deploy(dfvVesting.target, owner.address, owner.address, owner.address);
     await dfvToken.waitForDeployment();
 
     await dfvVesting.setVestingToken(dfvToken.target);
@@ -65,6 +65,61 @@ describe("DFVVesting", function () {
 
     it("Should have not zero initial totalVested", async function () {
       expect(await dfvVesting.totalVested()).to.not.equal(0);
+    });
+  });
+
+  describe("setVestingToken", function () {
+    let newDfvVesting: DFVVesting;
+    let newToken: DFVToken;
+
+    beforeEach(async function () {
+      const DFVVestingFactory = await ethers.getContractFactory("DFVVesting");
+      newDfvVesting = await DFVVestingFactory.deploy(owner.address, owner.address);
+      await newDfvVesting.waitForDeployment();
+
+      const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
+      newToken = await DFVTokenFactory.deploy(owner.address, owner.address, owner.address, owner.address);
+      await newToken.waitForDeployment();
+    });
+
+    it("Should set vesting token successfully when called by VESTING_MANAGER_ROLE", async function () {
+      await newDfvVesting.setVestingToken(await newToken.getAddress());
+      expect(await newDfvVesting.token()).to.equal(await newToken.getAddress());
+    });
+
+    it("Should revert when called by non-VESTING_MANAGER_ROLE", async function () {
+      await expect(
+        newDfvVesting.connect(beneficiary1).setVestingToken(await newToken.getAddress())
+      ).to.be.revertedWithCustomError(newDfvVesting, "AccessControlUnauthorizedAccount");
+    });
+
+    it("Should revert when token address is zero", async function () {
+      await expect(newDfvVesting.setVestingToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(
+        newDfvVesting,
+        "ZeroAddress"
+      );
+    });
+
+    it("Should revert when token is already set", async function () {
+      await newDfvVesting.setVestingToken(await newToken.getAddress());
+
+      await expect(newDfvVesting.setVestingToken(await newToken.getAddress())).to.be.revertedWithCustomError(
+        newDfvVesting,
+        "TokenAlreadySet"
+      );
+    });
+
+    it("Should revert when trying to set different token after first token is set", async function () {
+      await newDfvVesting.setVestingToken(await newToken.getAddress());
+
+      const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
+      const anotherToken = await DFVTokenFactory.deploy(owner.address, owner.address, owner.address, owner.address);
+      await anotherToken.waitForDeployment();
+
+      await expect(newDfvVesting.setVestingToken(await anotherToken.getAddress())).to.be.revertedWithCustomError(
+        newDfvVesting,
+        "TokenAlreadySet"
+      );
     });
   });
 
@@ -195,6 +250,65 @@ describe("DFVVesting", function () {
         })
       ).to.be.revertedWithCustomError(dfvVesting, "AccessControlUnauthorizedAccount");
     });
+
+    it("Should revert when contract doesn't have enough token balance", async function () {
+      const largeAmount = ethers.parseEther("999999999999");
+
+      await expect(
+        dfvVesting.createCustomVestingPool({
+          beneficiary: beneficiary1.address,
+          amount: largeAmount,
+          start: await time.latest(),
+          schedule: { cliffDuration: 0, periodDuration: MONTH, periodCount: 12 },
+          initialUnlockPercent: 0,
+        })
+      ).to.be.revertedWithCustomError(dfvVesting, "NotEnoughBalance");
+    });
+
+    it("Should revert when approved amount is insufficient for vesting pool", async function () {
+      const DFVVestingFactory = await ethers.getContractFactory("DFVVesting");
+      const newVesting = await DFVVestingFactory.deploy(owner.address, owner.address);
+      await newVesting.waitForDeployment();
+
+      const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
+      const newToken = await DFVTokenFactory.deploy(owner.address, owner.address, owner.address, owner.address);
+      await newToken.waitForDeployment();
+
+      await newVesting.setVestingToken(await newToken.getAddress());
+
+      const requestedAmount = ethers.parseEther("2000");
+      const insufficientAmount = ethers.parseEther("1000");
+
+      await newToken.transfer(await newVesting.getAddress(), insufficientAmount);
+
+      await expect(
+        newVesting.createCustomVestingPool({
+          beneficiary: beneficiary1.address,
+          amount: requestedAmount,
+          start: await time.latest(),
+          schedule: { cliffDuration: 0, periodDuration: MONTH, periodCount: 12 },
+          initialUnlockPercent: 0,
+        })
+      ).to.be.revertedWithCustomError(newVesting, "NotEnoughBalance");
+    });
+    it("Should succeed when contract has exact required balance", async function () {
+      const exactAmount = ethers.parseEther("1000");
+
+      await dfvToken.approve(await dfvVesting.getAddress(), exactAmount);
+
+      await expect(
+        dfvVesting.createCustomVestingPool({
+          beneficiary: beneficiary1.address,
+          amount: exactAmount,
+          start: await time.latest(),
+          schedule: { cliffDuration: 0, periodDuration: MONTH, periodCount: 12 },
+          initialUnlockPercent: 0,
+        })
+      ).to.not.be.reverted;
+
+      const pool = await dfvVesting.pools(beneficiary1.address, 0);
+      expect(pool.amount).to.equal(exactAmount);
+    });
   });
 
   describe("createCustomVestingPoolBatch", function () {
@@ -248,7 +362,6 @@ describe("DFVVesting", function () {
       const vestingAmount = ethers.parseEther("100");
       const currentTime = await time.latest();
 
-      // Create an array with 101 params (exceeds MAX_BATCH_SIZE of 100)
       const params = Array(101)
         .fill(null)
         .map((_, index) => ({
@@ -262,6 +375,45 @@ describe("DFVVesting", function () {
       await expect(dfvVesting.createCustomVestingPoolBatch(params)).to.be.revertedWithCustomError(
         dfvVesting,
         "BatchSizeExceedsLimit"
+      );
+    });
+
+    it("Should revert when contract doesn't have enough balance for batch creation", async function () {
+      const DFVVestingFactory = await ethers.getContractFactory("DFVVesting");
+      const newVesting = await DFVVestingFactory.deploy(owner.address, owner.address);
+      await newVesting.waitForDeployment();
+
+      const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
+      const newToken = await DFVTokenFactory.deploy(owner.address, owner.address, owner.address, owner.address);
+      await newToken.waitForDeployment();
+
+      await newVesting.setVestingToken(await newToken.getAddress());
+
+      const vestingAmount = ethers.parseEther("1000");
+      const insufficientAmount = ethers.parseEther("500");
+
+      await newToken.transfer(await newVesting.getAddress(), insufficientAmount);
+
+      const params = [
+        {
+          beneficiary: beneficiary1.address,
+          amount: vestingAmount,
+          start: (await time.latest()) + 100,
+          schedule: { cliffDuration: 0, periodDuration: MONTH, periodCount: 12 },
+          initialUnlockPercent: 0,
+        },
+        {
+          beneficiary: beneficiary2.address,
+          amount: vestingAmount,
+          start: (await time.latest()) + 200,
+          schedule: { cliffDuration: MONTH, periodDuration: MONTH, periodCount: 6 },
+          initialUnlockPercent: 500,
+        },
+      ];
+
+      await expect(newVesting.createCustomVestingPoolBatch(params)).to.be.revertedWithCustomError(
+        newVesting,
+        "NotEnoughBalance"
       );
     });
   });
@@ -316,6 +468,33 @@ describe("DFVVesting", function () {
           start: await time.latest(),
         })
       ).to.be.revertedWithCustomError(dfvVesting, "NotEnoughAllocationLeft");
+    });
+
+    it("Should revert when contract doesn't have enough balance for category pool", async function () {
+      const DFVVestingFactory = await ethers.getContractFactory("DFVVesting");
+      const newVesting = await DFVVestingFactory.deploy(owner.address, owner.address);
+      await newVesting.waitForDeployment();
+
+      const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
+      const newToken = await DFVTokenFactory.deploy(owner.address, owner.address, owner.address, owner.address);
+      await newToken.waitForDeployment();
+
+      await newVesting.setVestingToken(await newToken.getAddress());
+
+      const multiplier = 1n;
+      const expectedAmount = ethers.parseEther("69420000") * multiplier;
+      const insufficientAmount = ethers.parseEther("1000");
+
+      await newToken.transfer(await newVesting.getAddress(), insufficientAmount);
+
+      await expect(
+        newVesting.createCategoryPool({
+          category: 1,
+          beneficiary: beneficiary1.address,
+          multiplierOrAmount: multiplier,
+          start: await time.latest(),
+        })
+      ).to.be.revertedWithCustomError(newVesting, "NotEnoughBalance");
     });
   });
 
@@ -404,11 +583,10 @@ describe("DFVVesting", function () {
       const amount = ethers.parseEther("1000");
       const currentTime = await time.latest();
 
-      // Create an array with 101 params (exceeds MAX_BATCH_SIZE of 100)
       const params = Array(101)
         .fill(null)
         .map((_, index) => ({
-          category: 4, // CommunityAirdrop category
+          category: 4,
           beneficiary: addrs[index % addrs.length].address,
           multiplierOrAmount: amount,
           start: currentTime + 100,
@@ -569,20 +747,17 @@ describe("DFVVesting", function () {
       const remainingAmount = customVestingAmount - initialUnlockAmount;
       const amountPerPeriod = remainingAmount / BigInt(periodCount);
 
-      // Before cliff - no tokens should be claimable
       let claimableAmount = await dfvVesting.getClaimableAmount(beneficiary2.address);
       expect(claimableAmount).to.equal(0);
 
-      await time.increase(MONTH * 2); // Still within cliff
+      await time.increase(MONTH * 2);
       claimableAmount = await dfvVesting.getClaimableAmount(beneficiary2.address);
       expect(claimableAmount).to.equal(0);
 
-      // At cliff end - initial unlock should be available
-      await time.increase(MONTH); // Now at 3 months (cliff end)
+      await time.increase(MONTH);
       claimableAmount = await dfvVesting.getClaimableAmount(beneficiary2.address);
       expect(claimableAmount).to.equal(initialUnlockAmount);
 
-      // Claim initial unlock
       let initialBalance = await dfvToken.balanceOf(beneficiary2.address);
       await dfvVesting.connect(beneficiary2).claimFor(beneficiary2.address);
       let finalBalance = await dfvToken.balanceOf(beneficiary2.address);
@@ -597,7 +772,6 @@ describe("DFVVesting", function () {
         claimableAmount = await dfvVesting.getClaimableAmount(beneficiary2.address);
         expect(claimableAmount).to.closeTo(expectedClaimable, 1);
 
-        // Claim for this period
         initialBalance = await dfvToken.balanceOf(beneficiary2.address);
         await dfvVesting.connect(beneficiary2).claim();
         finalBalance = await dfvToken.balanceOf(beneficiary2.address);
@@ -605,11 +779,9 @@ describe("DFVVesting", function () {
         expect(finalBalance - initialBalance).to.closeTo(expectedClaimable, 1);
         totalClaimed += expectedClaimable;
 
-        // Verify pool state
         const pool = await dfvVesting.pools(beneficiary2.address, 0);
         expect(pool.claimed).to.closeTo(totalClaimed, 10);
 
-        // No more claimable amount after claiming
         const remainingClaimable = await dfvVesting.getClaimableAmount(beneficiary2.address);
         expect(remainingClaimable).to.equal(0);
       }
@@ -668,7 +840,7 @@ describe("DFVVesting", function () {
 
     it("Should allow withdrawal of different tokens without vesting deduction", async function () {
       const OtherTokenFactory = await ethers.getContractFactory("DFVToken");
-      const otherToken = await OtherTokenFactory.deploy(owner.address);
+      const otherToken = await OtherTokenFactory.deploy(owner.address, owner.address, owner.address, owner.address);
       await otherToken.waitForDeployment();
 
       const amount = ethers.parseEther("1000");

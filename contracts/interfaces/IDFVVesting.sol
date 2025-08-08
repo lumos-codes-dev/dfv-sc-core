@@ -128,6 +128,11 @@ interface IDFVVesting {
     /// @dev Error thrown when the vesting token is already set and cannot be changed
     error TokenAlreadySet();
 
+    /// @dev Error thrown when the contract does not have enough tokens to create a vesting pool
+    /// @param available The amount of tokens available in the contract
+    /// @param required The amount of tokens required to create the vesting pool
+    error NotEnoughBalance(uint256 available, uint256 required);
+
     /// @notice Function to create a new vesting pool
     /// @param params_ The parameters for creating a custom vesting pool
     /// @dev See `CreateCustomVestingPoolParams` for details on the parameters

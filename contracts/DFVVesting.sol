@@ -25,6 +25,9 @@ contract DFVVesting is IDFVVesting, AccessControl {
     /// @dev Used to limit the number of beneficiaries in a single batch operation
     uint256 public constant MAX_BATCH_SIZE = 100;
 
+    /// @dev Boolean to check if the contract has been initialized
+    bool public initialized;
+
     /// @dev The token that is being vested
     IERC20 public token;
 
@@ -93,7 +96,8 @@ contract DFVVesting is IDFVVesting, AccessControl {
             0xACce9487EcF6F32325ad612df0D1f1288653905A,
             0x84240C190FB0761527bA3A490BFe2e002413CDe4,
             0xeE6343ED1b521440A3c952FCAAA1E487a0403DbC,
-            0x147EC80822AFD4C6bC13aC116Ce3ae886099AB47
+            // 0x147EC80822AFD4C6bC13aC116Ce3ae886099AB47
+            0x0BcfB8821e6E78958bcA048dBb1B0CA0a7bb27e3
         ];
 
         _grantRole(DEFAULT_ADMIN_ROLE, dao_);
@@ -118,6 +122,8 @@ contract DFVVesting is IDFVVesting, AccessControl {
                 ++i;
             }
         }
+
+        initialized = true;
     }
 
     /// @notice Function to set the vesting token
@@ -302,6 +308,11 @@ contract DFVVesting is IDFVVesting, AccessControl {
             ZeroAmount()
         );
         require(params_.initialUnlockPercent <= BASIS_POINTS_DENOMINATOR, InitialUnlockExceedsLimit());
+
+        if (initialized) {
+            uint256 balance = token.balanceOf(address(this));
+            require(balance >= params_.amount, NotEnoughBalance(balance, params_.amount));
+        }
 
         Pool memory pool = Pool({
             amount: params_.amount,
