@@ -346,6 +346,8 @@ describe("DFVDAO", function () {
 
   describe("DAO Execute Vesting Pool Creation", function () {
     let proposalId: bigint;
+    let createCategoryPoolCalldata: string;
+    let vestingStartTime: number;
     const VESTING_AMOUNT = ethers.parseEther("694200000");
 
     beforeEach(async function () {
@@ -385,12 +387,14 @@ describe("DFVDAO", function () {
         ethers.keccak256(ethers.toUtf8Bytes("Approve DFVVesting to spend tokens"))
       );
 
-      const createCategoryPoolCalldata = dfvVesting.interface.encodeFunctionData("createCategoryPool", [
+      vestingStartTime = Math.floor(Date.now() / 1000) + 3600;
+
+      createCategoryPoolCalldata = dfvVesting.interface.encodeFunctionData("createCategoryPool", [
         {
           category: 1,
           beneficiary: recipient.address,
           multiplierOrAmount: 1,
-          start: Math.floor(Date.now() / 1000) + 3600,
+          start: vestingStartTime,
         },
       ]);
 
@@ -421,15 +425,6 @@ describe("DFVDAO", function () {
       await time.increase(VOTING_PERIOD + 1);
 
       expect(await dfvDAO.state(proposalId)).to.equal(4);
-
-      const createCategoryPoolCalldata = dfvVesting.interface.encodeFunctionData("createCategoryPool", [
-        {
-          category: 1,
-          beneficiary: recipient.address,
-          multiplierOrAmount: 1,
-          start: Math.floor(Date.now() / 1000) + 3600,
-        },
-      ]);
 
       await dfvDAO.queue(
         [await dfvVesting.getAddress()],
@@ -475,15 +470,6 @@ describe("DFVDAO", function () {
 
       await time.increase(VOTING_PERIOD + 1);
 
-      const createCategoryPoolCalldata = dfvVesting.interface.encodeFunctionData("createCategoryPool", [
-        {
-          category: 1,
-          beneficiary: recipient.address,
-          multiplierOrAmount: 1,
-          start: Math.floor(Date.now() / 1000) + 3600,
-        },
-      ]);
-
       await dfvDAO.queue(
         [await dfvVesting.getAddress()],
         [0],
@@ -510,15 +496,6 @@ describe("DFVDAO", function () {
       await dfvDAO.connect(voter1).castVote(proposalId, 1);
       await dfvDAO.connect(voter2).castVote(proposalId, 1);
       await time.increase(VOTING_PERIOD + 1);
-
-      const createCategoryPoolCalldata = dfvVesting.interface.encodeFunctionData("createCategoryPool", [
-        {
-          category: 1,
-          beneficiary: recipient.address,
-          multiplierOrAmount: 1,
-          start: Math.floor(Date.now() / 1000) + 3600,
-        },
-      ]);
 
       await dfvDAO.queue(
         [await dfvVesting.getAddress()],
