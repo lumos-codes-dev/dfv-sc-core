@@ -15,12 +15,29 @@ contract DFVToken is ERC20, ERC20Permit, ERC20Votes {
     /**
      * @notice Constructor to initialize the DFVToken contract
      * @dev Sets the token name and symbol and mints an initial supply
-     * @param vesting_ The address of the vesting contract which will hold the initial supply
      * @dev The initial supply is set to 138,840,000,000 tokens with 18 decimals
-     * @dev The initial supply is minted to the deployer's address
+     * @param vesting_ Vesting contract which will distribute 50% (69,420,000,000 tokens) of the tokens:
+     * Blind Believers - 15% of the total supply (20,826,000,000 tokens)
+     * Eternal HODLers - 10% of the total supply (13,884,000,000 tokens)
+     * Diamond Hands - 10% of the total supply (13,884,000,000 tokens)
+     * Just HODLers - 10% of the total supply (13,884,000,000 tokens)
+     * Community Airdrop - 5% of the total supply (6,942,000,000 tokens)
+     * @param treasury_ The address of the treasury which will hold a portion of the tokens:
+     * Uniswap (on ZRO) - Community pool - 48.5% of the total supply (67,337,400,000 tokens)
+     * Treasury - 0.5% of the total supply (694,200,000 tokens)
+     * @param team_ The address of the team which will hold 0.5% (694,200,000 tokens) of the total supply
+     * @param vc_ The address of the venture capital which will hold 0.5% (694,200,000 tokens) of the total supply
      */
-    constructor(address vesting_) ERC20("DFV Token", "DFV") ERC20Permit("DFV Token") {
-        _mint(vesting_, 138_840_000_000 * 10 ** decimals());
+    constructor(
+        address vesting_,
+        address treasury_,
+        address team_,
+        address vc_
+    ) ERC20("DFV Token", "DFV") ERC20Permit("DFV Token") {
+        _mint(vesting_, 69_420_000_000 * 10 ** decimals());
+        _mint(treasury_, 68_031_600_000 * 10 ** decimals());
+        _mint(team_, 694_200_000 * 10 ** decimals());
+        _mint(vc_, 694_200_000 * 10 ** decimals());
     }
 
     /**
