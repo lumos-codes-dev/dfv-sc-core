@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import hre from "hardhat";
 
-import { DFVVesting__factory, DFVToken__factory } from "../../../typechain-types";
+import { DFVVesting__factory, DFVToken__factory } from "../../typechain-types";
 import { CreateCategoryPoolParams, VestingCategory } from "./types";
 import { getParams } from "./params/BlindBelivers.params";
 
