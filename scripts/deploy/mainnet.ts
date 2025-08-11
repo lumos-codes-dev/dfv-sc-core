@@ -8,11 +8,11 @@ async function main() {
   console.log("Deploying with account:", deployer.address);
   console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "ETH\n");
 
-  const VESTING_MANAGER_ADDRESS = ""; // ! Need to specify
+  const VESTING_MANAGER_ADDRESS = "0xF5D46bDe4dC092aa637A7A04212Acb7aB030fa32"; // ! Need to specify
 
-  const TREASURY_ADDRESS = ""; // ! Need to specify
-  const TEAM_ADDRESS = ""; // ! Need to specify
-  const VC_ADDRESS = ""; // ! Need to specify
+  const TREASURY_ADDRESS = "0x7c837A5b15439725AdA552b7e36d642B60F119a1"; // ! Need to specify
+  const TEAM_ADDRESS = "0x7c837A5b15439725AdA552b7e36d642B60F119a1"; // ! Need to specify
+  const VC_ADDRESS = "0x7c837A5b15439725AdA552b7e36d642B60F119a1"; // ! Need to specify
 
   const VOTING_DELAY = 60 * 60 * 24 * 14; // 14 days in seconds
   const VOTING_PERIOD = 60 * 60 * 24 * 30; // 30 days in seconds
