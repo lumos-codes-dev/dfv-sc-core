@@ -8,11 +8,11 @@ async function main() {
   console.log("Deploying with account:", deployer.address);
   console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "ETH\n");
 
-  const CLIENT_ADDRESS = "0x0BcfB8821e6E78958bcA048dBb1B0CA0a7bb27e3";
+  const VESTING_MANAGER_ADDRESS = "0x0BcfB8821e6E78958bcA048dBb1B0CA0a7bb27e3";
 
-  const TREASURY_ADDRESS = CLIENT_ADDRESS;
-  const TEAM_ADDRESS = CLIENT_ADDRESS;
-  const VC_ADDRESS = CLIENT_ADDRESS;
+  const TREASURY_ADDRESS = VESTING_MANAGER_ADDRESS;
+  const TEAM_ADDRESS = VESTING_MANAGER_ADDRESS;
+  const VC_ADDRESS = VESTING_MANAGER_ADDRESS;
 
   const VOTING_DELAY = 60; // 1 minute in seconds
   const VOTING_PERIOD = 600; // 10 minutes in seconds
@@ -35,7 +35,7 @@ async function main() {
   // Step 2: Deploy DFVVesting
   console.log("\n2. Deploying DFVVesting...");
   const DFVVestingFactory = await ethers.getContractFactory("DFVVesting");
-  const dfvVesting = await DFVVestingFactory.deploy(deployer.address, CLIENT_ADDRESS);
+  const dfvVesting = await DFVVestingFactory.deploy(deployer.address, VESTING_MANAGER_ADDRESS);
   await dfvVesting.waitForDeployment();
   console.log("DFVVesting deployed to:", await dfvVesting.getAddress());
 
@@ -107,7 +107,7 @@ async function main() {
       `npx hardhat verify --network sepolia ${await timeLock.getAddress()} ${MIN_DELAY} "[]" "[]" "${deployer.address}"`
     );
     console.log(
-      `npx hardhat verify --network sepolia ${await dfvVesting.getAddress()} "${deployer.address}" "${CLIENT_ADDRESS}"`
+      `npx hardhat verify --network sepolia ${await dfvVesting.getAddress()} "${deployer.address}" "${VESTING_MANAGER_ADDRESS}"`
     );
     console.log(
       `npx hardhat verify --network sepolia ${await dfvToken.getAddress()} "${
@@ -151,7 +151,7 @@ async function main() {
           address: await dfvVesting.getAddress(),
           constructorArguments: [
             deployer.address, // dao
-            CLIENT_ADDRESS, // client
+            VESTING_MANAGER_ADDRESS, // client
           ],
         });
         console.log("✅ DFVVesting verified on Etherscan");
@@ -215,7 +215,7 @@ async function main() {
 
       console.log("\nDFVVesting constructor arguments:");
       console.log("- dao:", deployer.address);
-      console.log("- client:", CLIENT_ADDRESS);
+      console.log("- client:", VESTING_MANAGER_ADDRESS);
 
       console.log("\nDFVToken constructor arguments:");
       console.log("- vestingContract:", dfvVesting.target);
