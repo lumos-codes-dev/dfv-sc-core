@@ -53,7 +53,16 @@ describe("DFVDAO", function () {
     dfvVesting = await DFVVestingFactory.deploy(timeLock.target, owner.address);
     await dfvVesting.waitForDeployment();
 
-    dfvToken = await DFVTokenFactory.deploy(dfvVesting.target, owner.address, owner.address, owner.address);
+    dfvToken = await DFVTokenFactory.deploy(
+      dfvVesting.target,
+      owner.address,
+      owner.address,
+      owner.address,
+      owner.address,
+      owner.address,
+      owner.address,
+      owner.address
+    );
     await dfvToken.waitForDeployment();
 
     await dfvVesting.setVestingToken(dfvToken.target);

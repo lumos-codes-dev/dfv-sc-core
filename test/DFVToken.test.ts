@@ -19,7 +19,7 @@ describe("DFVToken", function () {
     [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 
     const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
-    dfvToken = await DFVTokenFactory.deploy(owner.address, owner.address, owner.address, owner.address);
+    dfvToken = await DFVTokenFactory.deploy(owner.address, owner.address, owner.address, owner.address, owner.address, owner.address, owner.address, owner.address);
     await dfvToken.waitForDeployment();
   });
 
