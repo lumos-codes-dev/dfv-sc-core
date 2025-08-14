@@ -74,7 +74,8 @@ contract DFVVesting is IDFVVesting, AccessControl {
             0x147EC80822AFD4C6bC13aC116Ce3ae886099AB47,
             0x250e6E64276D5e9a1cA0B6C5B2B11c5139CD1Fc7,
             0x255252421d42949843e6bdB40065d39c110c8191,
-            0x3068722291E90e7251D37b9b5Bc1E3D303885bb7,
+            // 694,195,000.00
+            // 0x3068722291E90e7251D37b9b5Bc1E3D303885bb7,
             0x3e46e4e203Bc6Aa3b3c6a2993C3cCEDeAF177f61,
             0x49e5c7645EaF21A531D933dE365ABDB01Ba3A2f6,
             0x4Bd6300fc61Fa86b3d98A73CeE89bb54140b45e3,
@@ -85,7 +86,8 @@ contract DFVVesting is IDFVVesting, AccessControl {
             0x7b1D81Ba131F551DA2f70f7c2363b45DbD451d83,
             0x84240C190FB0761527bA3A490BFe2e002413CDe4,
             0x8e80410Ae2c5a394D1a81364fB932dF86Eb4992d,
-            0xA68D88522E06c226f1a3B9D04A86d4CdaCE666fE,
+            // 696,582,491.30
+            // 0xA68D88522E06c226f1a3B9D04A86d4CdaCE666fE, 
             0xac783aEA23528862E2e4E7c9F8Bbc65bfAFe33B3,
             0xACce9487EcF6F32325ad612df0D1f1288653905A,
             0xBD34Dc3FBb661612AAbCADaf758Caa6E22787297,
@@ -121,6 +123,24 @@ contract DFVVesting is IDFVVesting, AccessControl {
                 ++i;
             }
         }
+
+        _createCategoryPool(
+            CreateCategoryPoolParams({
+                category: VestingCategory.BlindBelievers1,
+                beneficiary: 0x3068722291E90e7251D37b9b5Bc1E3D303885bb7,
+                multiplierOrAmount: 1, // 694,195,000.00 
+                start: 0
+            })
+        );
+
+        _createCategoryPool(
+            CreateCategoryPoolParams({
+                category: VestingCategory.BlindBelievers2,
+                beneficiary: 0xA68D88522E06c226f1a3B9D04A86d4CdaCE666fE,
+                multiplierOrAmount: 1, // 696,582,491.30
+                start: 0
+            })
+        );
 
         initialized = true;
     }
@@ -224,43 +244,37 @@ contract DFVVesting is IDFVVesting, AccessControl {
     /// @notice Internal function to initialize the vesting categories with their rules
     /// @dev This function sets up the initial rules for each vesting category
     function _initializeCategories() internal {
+        // Blind Believers = 20,828,377,491.30 = approx. ~15% of total supply
+
+        // Blind Believers
         categories[VestingCategory.BlindBelievers] = CategoryRules({
-            totalVestedAmountLeft: 20_826_000_000 * 1e18, // 15% of total supply
+            totalVestedAmountLeft: 694_200_000 * 28 * 1e18,
             qty: 694_200_000 * 1e18,
-            beneficiariesLeft: 30,
-            schedule: Schedule({cliffDuration: 0, periodDuration: 1 seconds, periodCount: 31_104_000}),
+            beneficiariesLeft: 28,
+            // 1 year cliff = 60 * 60 * 24 * 365s, 5 years vesting = 60 * 60 * 24 * 365 * 5s
+            schedule: Schedule({cliffDuration: 31_536_000, periodDuration: 1 seconds, periodCount: 157_680_000}),
             initialUnlockPercent: 0
         });
 
-        categories[VestingCategory.EternalHODLers] = CategoryRules({
-            totalVestedAmountLeft: 13_884_000_000 * 1e18, // 10% of total supply
-            qty: 69_420_000 * 1e18,
-            beneficiariesLeft: 200,
-            schedule: Schedule({cliffDuration: 0, periodDuration: 1 minutes, periodCount: 518_400}),
+        // special case for Blind Believers 0x3068722291E90e7251D37b9b5Bc1E3D303885bb7
+        // 694,195,000.00
+        categories[VestingCategory.BlindBelievers1] = CategoryRules({
+            totalVestedAmountLeft: 694_195_000 * 1e18,
+            qty: 694_195_000 * 1e18,
+            beneficiariesLeft: 1,
+            // 1 year cliff = 60 * 60 * 24 * 365s, 5 years vesting = 60 * 60 * 24 * 365 * 5s
+            schedule: Schedule({cliffDuration: 31_536_000, periodDuration: 1 seconds, periodCount: 157_680_000}),
             initialUnlockPercent: 0
         });
 
-        categories[VestingCategory.DiamondHands] = CategoryRules({
-            totalVestedAmountLeft: 6_942_000_000 * 1e18, // 5% of total supply
-            qty: 6_942_000 * 1e18,
-            beneficiariesLeft: 1000,
-            schedule: Schedule({cliffDuration: 0, periodDuration: 5 minutes, periodCount: 103_680}),
-            initialUnlockPercent: 0
-        });
-
-        categories[VestingCategory.JustHODLers] = CategoryRules({
-            totalVestedAmountLeft: 13_884_000_000 * 1e18, // 10% of total supply
-            qty: 694_200 * 1e18,
-            beneficiariesLeft: 20000,
-            schedule: Schedule({cliffDuration: 0, periodDuration: 1 hours, periodCount: 8_640}),
-            initialUnlockPercent: 0
-        });
-
-        categories[VestingCategory.CommunityAirdrop] = CategoryRules({
-            totalVestedAmountLeft: 13_884_000_000 * 1e18, // 10% of total supply
-            qty: 0,
-            beneficiariesLeft: 10000,
-            schedule: Schedule({cliffDuration: 0, periodDuration: 1 seconds, periodCount: 31_104_000}),
+        // special case for Blind Believers 0xA68D88522E06c226f1a3B9D04A86d4CdaCE666fE
+        // 696,582,491.30
+        categories[VestingCategory.BlindBelievers2] = CategoryRules({
+            totalVestedAmountLeft: 696_582_491_3 * 1e17,
+            qty: 696_582_491_3 * 1e17,
+            beneficiariesLeft: 1,
+            // 1 year cliff = 60 * 60 * 24 * 365s, 5 years vesting = 60 * 60 * 24 * 365 * 5s
+            schedule: Schedule({cliffDuration: 31_536_000, periodDuration: 1 seconds, periodCount: 157_680_000}),
             initialUnlockPercent: 0
         });
     }
@@ -272,9 +286,7 @@ contract DFVVesting is IDFVVesting, AccessControl {
     function _createCategoryPool(CreateCategoryPoolParams memory params_) internal {
         CategoryRules storage category = categories[params_.category];
 
-        uint256 amount = params_.category != VestingCategory.CommunityAirdrop
-            ? category.qty * params_.multiplierOrAmount
-            : params_.multiplierOrAmount;
+        uint256 amount = category.qty * params_.multiplierOrAmount;
 
         require(category.beneficiariesLeft != 0, CategoryBeneficiariesAllSet(params_.category));
         require(category.totalVestedAmountLeft >= amount, NotEnoughAllocationLeft(params_.category));

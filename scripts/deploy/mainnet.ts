@@ -10,13 +10,19 @@ async function main() {
 
   const VESTING_MANAGER_ADDRESS = "0xF5D46bDe4dC092aa637A7A04212Acb7aB030fa32"; // ! Need to specify
 
-  const TREASURY_ADDRESS = "0x7c837A5b15439725AdA552b7e36d642B60F119a1"; // ! Need to specify
-  const TEAM_ADDRESS = "0x7c837A5b15439725AdA552b7e36d642B60F119a1"; // ! Need to specify
-  const VC_ADDRESS = "0x7c837A5b15439725AdA552b7e36d642B60F119a1"; // ! Need to specify
+  const UNI_ADDRESS = "0x6bb092525c504d39551eb3ac208d1c4423bfd13f";
+  // vesting is defined during deployment
+  const ETERNAL_HODLERS_ADDRESS = "0x311a14194664b0b4c58433c33626df0b32f14372";
+  const JUST_HODLERS_ADDRESS = "0xb0b43a98af1c88c755673a81913707638d261392";
+  const AIRDROP_ADDRESS = "0xca628438886dcf4854ce6c6db94e4b9fb47ee07b";
+  const DIAMOND_HANDS_ADDRESS = "0x214eb48eb73bb0d79bab2b4fd4c406a6547cba14";
+  const TREASURY_ADDRESS = "0x7c837a5b15439725ada552b7e36d642b60f119a1";
+  const DAO = "0xaf786e8cdd7e4390bd629bfdec8f090268fe2934";
 
+  // DAO parameters
   const VOTING_DELAY = 60 * 60 * 24 * 14; // 14 days in seconds
   const VOTING_PERIOD = 60 * 60 * 24 * 30; // 30 days in seconds
-  const PROPOSAL_THRESHOLD = ethers.parseEther("694200000"); // 694200000 tokens (1.5% of 138,840,000,000 tokens total supply)
+  const PROPOSAL_THRESHOLD = ethers.parseEther("694200000"); // 694200000 tokens (0.5% of 138,840,000,000 tokens total supply)
   const QUORUM_PERCENTAGE = 15; // 15%
   const MIN_DELAY = 60 * 60 * 24 * 14; // ! Specify minimum delay for timelock later (now is 14 days in seconds)
 
@@ -42,7 +48,7 @@ async function main() {
   // Step 3: Deploy DFVToken
   console.log("\n3. Deploying DFVToken...");
   const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
-  const dfvToken = await DFVTokenFactory.deploy(dfvVesting.target, TREASURY_ADDRESS, TEAM_ADDRESS, VC_ADDRESS);
+  const dfvToken = await DFVTokenFactory.deploy(dfvVesting.target, UNI_ADDRESS, ETERNAL_HODLERS_ADDRESS, JUST_HODLERS_ADDRESS, AIRDROP_ADDRESS, DIAMOND_HANDS_ADDRESS, TREASURY_ADDRESS, DAO);
   await dfvToken.waitForDeployment();
   console.log("DFVToken deployed to:", await dfvToken.getAddress());
   console.log("Total supply:", ethers.formatEther(await dfvToken.totalSupply()), "DFV");

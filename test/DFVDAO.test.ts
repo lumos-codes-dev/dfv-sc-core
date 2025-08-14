@@ -398,12 +398,17 @@ describe("DFVDAO", function () {
 
       vestingStartTime = Math.floor(Date.now() / 1000) + 3600;
 
-      createCategoryPoolCalldata = dfvVesting.interface.encodeFunctionData("createCategoryPool", [
+      createCategoryPoolCalldata = dfvVesting.interface.encodeFunctionData("createCustomVestingPool", [
         {
-          category: 1,
           beneficiary: recipient.address,
-          multiplierOrAmount: 1,
+          amount: VESTING_AMOUNT,
           start: vestingStartTime,
+          schedule: {
+              cliffDuration: 0,
+              periodDuration: 1,
+              periodCount: 31_104_000, // 12 months
+            },
+          initialUnlockPercent: 0
         },
       ]);
 

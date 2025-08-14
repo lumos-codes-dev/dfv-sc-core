@@ -37,10 +37,8 @@ interface IDFVVesting {
     /// @dev This enum is used to categorize different types of vesting pools.
     enum VestingCategory {
         BlindBelievers,
-        EternalHODLers,
-        DiamondHands,
-        JustHODLers,
-        CommunityAirdrop
+        BlindBelievers1,
+        BlindBelievers2
     }
 
     /// @notice Structure to define rules for a vesting category
