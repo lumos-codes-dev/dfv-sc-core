@@ -10,14 +10,9 @@ async function main() {
 
   const VESTING_MANAGER_ADDRESS = "0x0BcfB8821e6E78958bcA048dBb1B0CA0a7bb27e3";
 
-  const UNI_ADDRESS = "0x6bb092525c504d39551eb3ac208d1c4423bfd13f";
+  const UNI_ADDRESS = "0x0BcfB8821e6E78958bcA048dBb1B0CA0a7bb27e3";
   // vesting is defined during deployment
-  const ETERNAL_HODLERS_ADDRESS = "0x311a14194664b0b4c58433c33626df0b32f14372";
-  const JUST_HODLERS_ADDRESS = "0xb0b43a98af1c88c755673a81913707638d261392";
-  const AIRDROP_ADDRESS = "0xca628438886dcf4854ce6c6db94e4b9fb47ee07b";
-  const DIAMOND_HANDS_ADDRESS = "0x214eb48eb73bb0d79bab2b4fd4c406a6547cba14";
-  const TREASURY_ADDRESS = "0x7c837a5b15439725ada552b7e36d642b60f119a1";
-  const DAO = "0xaf786e8cdd7e4390bd629bfdec8f090268fe2934";
+  const DAO = "0x0BcfB8821e6E78958bcA048dBb1B0CA0a7bb27e3";
 
   const VOTING_DELAY = 60; // 1 minute in seconds
   const VOTING_PERIOD = 600; // 10 minutes in seconds
@@ -47,7 +42,7 @@ async function main() {
   // Step 3: Deploy DFVToken
   console.log("\n3. Deploying DFVToken...");
   const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
-  const dfvToken = await DFVTokenFactory.deploy(dfvVesting.target, UNI_ADDRESS, ETERNAL_HODLERS_ADDRESS, JUST_HODLERS_ADDRESS, AIRDROP_ADDRESS, DIAMOND_HANDS_ADDRESS, TREASURY_ADDRESS, DAO);
+  const dfvToken = await DFVTokenFactory.deploy(dfvVesting.target, UNI_ADDRESS, DAO);
   await dfvToken.waitForDeployment();
   console.log("DFVToken deployed to:", await dfvToken.getAddress());
   console.log("Total supply:", ethers.formatEther(await dfvToken.totalSupply()), "DFV");
@@ -112,7 +107,9 @@ async function main() {
       `npx hardhat verify --network sepolia ${await timeLock.getAddress()} ${MIN_DELAY} "[]" "[]" "${deployer.address}"`
     );
     console.log(
-      `npx hardhat verify --network sepolia ${await dfvVesting.getAddress()} "${deployer.address}" "${VESTING_MANAGER_ADDRESS}"`
+      `npx hardhat verify --network sepolia ${await dfvVesting.getAddress()} "${
+        deployer.address
+      }" "${VESTING_MANAGER_ADDRESS}"`
     );
     console.log(
       `npx hardhat verify --network sepolia ${await dfvToken.getAddress()} "${
@@ -174,7 +171,16 @@ async function main() {
       try {
         await hre.run("verify:verify", {
           address: await dfvToken.getAddress(),
-          constructorArguments: [UNI_ADDRESS, dfvVesting.target, ETERNAL_HODLERS_ADDRESS, JUST_HODLERS_ADDRESS, AIRDROP_ADDRESS, DIAMOND_HANDS_ADDRESS, TREASURY_ADDRESS, DAO],
+          constructorArguments: [
+            UNI_ADDRESS,
+            dfvVesting.target,
+            ETERNAL_HODLERS_ADDRESS,
+            JUST_HODLERS_ADDRESS,
+            AIRDROP_ADDRESS,
+            DIAMOND_HANDS_ADDRESS,
+            TREASURY_ADDRESS,
+            DAO,
+          ],
         });
         console.log("✅ DFVToken verified on Etherscan");
       } catch (error: any) {
