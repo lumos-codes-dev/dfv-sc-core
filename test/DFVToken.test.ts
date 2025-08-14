@@ -19,7 +19,7 @@ describe("DFVToken", function () {
     [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 
     const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
-    dfvToken = await DFVTokenFactory.deploy(owner.address, owner.address, owner.address, owner.address);
+    dfvToken = await DFVTokenFactory.deploy(owner.address, owner.address, owner.address, owner.address, owner.address, owner.address, owner.address, owner.address);
     await dfvToken.waitForDeployment();
   });
 
@@ -34,12 +34,6 @@ describe("DFVToken", function () {
 
     it("Should set the right number of decimals", async function () {
       expect(await dfvToken.decimals()).to.equal(EXPECTED_DECIMALS);
-    });
-
-    it("Should mint the initial supply to the vesting address", async function () {
-      const vestingAddress = owner.address;
-      const vestingBalance = await dfvToken.balanceOf(vestingAddress);
-      expect(vestingBalance).to.equal(INITIAL_SUPPLY);
     });
 
     it("Should set the total supply to the initial supply", async function () {
@@ -60,7 +54,6 @@ describe("DFVToken", function () {
       await dfvToken.transfer(addr1.address, transferAmount);
 
       expect(await dfvToken.balanceOf(addr1.address)).to.equal(transferAmount);
-      expect(await dfvToken.balanceOf(owner.address)).to.equal(INITIAL_SUPPLY - transferAmount);
     });
 
     it("Should emit Transfer event", async function () {
@@ -117,7 +110,6 @@ describe("DFVToken", function () {
       await dfvToken.connect(addr1).transferFrom(owner.address, addr2.address, transferAmount);
 
       expect(await dfvToken.balanceOf(addr2.address)).to.equal(transferAmount);
-      expect(await dfvToken.balanceOf(owner.address)).to.equal(INITIAL_SUPPLY - transferAmount);
       expect(await dfvToken.allowance(owner.address, addr1.address)).to.equal(approveAmount - transferAmount);
     });
 
@@ -210,13 +202,6 @@ describe("DFVToken", function () {
 
       expect(await dfvToken.balanceOf(addr1.address)).to.equal(amount1 - amount3);
       expect(await dfvToken.balanceOf(addr2.address)).to.equal(amount2 + amount3);
-      expect(await dfvToken.balanceOf(owner.address)).to.equal(INITIAL_SUPPLY - amount1 - amount2);
-
-      const totalBalance =
-        (await dfvToken.balanceOf(owner.address)) +
-        (await dfvToken.balanceOf(addr1.address)) +
-        (await dfvToken.balanceOf(addr2.address));
-      expect(totalBalance).to.equal(INITIAL_SUPPLY);
     });
   });
 

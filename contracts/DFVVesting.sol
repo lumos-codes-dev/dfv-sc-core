@@ -67,36 +67,38 @@ contract DFVVesting is IDFVVesting, AccessControl {
     /// @param vestingManager_ The address of the vesting manager who will have the VESTING_MANAGER_ROLE
     constructor(address dao_, address vestingManager_) onlyNonZeroAddress(dao_) onlyNonZeroAddress(vestingManager_) {
         blindBelieversAddresses = [
-            0x5279d4F55096a427b9121c6D642395a4f0Cd04a4,
-            0x250e6E64276D5e9a1cA0B6C5B2B11c5139CD1Fc7,
-            0xA68D88522E06c226f1a3B9D04A86d4CdaCE666fE,
-            0x4Bd6300fc61Fa86b3d98A73CeE89bb54140b45e3,
-            0x7b1D81Ba131F551DA2f70f7c2363b45DbD451d83,
-            0xac783aEA23528862E2e4E7c9F8Bbc65bfAFe33B3,
-            0xdf99908D22D2F18B50E15D962E77666da4A04717,
-            0x3e46e4e203Bc6Aa3b3c6a2993C3cCEDeAF177f61,
-            0xD94A8E20CbDD95D050f1356259E18C4Dd10f661A,
-            0xe079E4AfB3FDd8F02B29C7A333D526b9c4C94B23,
-            0x0aF20A5C0FFb89dAD55076309925014EaeBb5568,
             0x015FC9C8B333Aeb7A91Fd966bbFE6FF9A0ef8331,
             0x049E035Fb280b1df29e1c9BaE586F8E2E03311E1,
-            0xE63cE53A4Ed7B5180311143AA3FE9131b4E0AB88,
-            0xBD34Dc3FBb661612AAbCADaf758Caa6E22787297,
-            0x60C7d0B2cD22e9D20BE93f9EFFBabF15fd599936,
-            0x6068efCd7DEdDED2A8444cbb218ffE71fa022D08,
-            0xF52eB9b90C0CE6B037381aEa62BfA7A1B5519D31,
+            0x0aF20A5C0FFb89dAD55076309925014EaeBb5568,
             0x128c21DFE98E7478e3cc6513AEF959BBD266Ed0F,
+            0x147EC80822AFD4C6bC13aC116Ce3ae886099AB47,
+            0x250e6E64276D5e9a1cA0B6C5B2B11c5139CD1Fc7,
             0x255252421d42949843e6bdB40065d39c110c8191,
-            0xC5DCb0A22551FbA93e260028813F0eef25bFfeA6,
-            0xEaF85B68ce6AC308946580b907C4f84d0Abb07ee,
-            0x63d97917852e12F1591A39D20ba8a2547169B298,
-            0x8e80410Ae2c5a394D1a81364fB932dF86Eb4992d,
-            0x3068722291E90e7251D37b9b5Bc1E3D303885bb7,
+            // 694,195,000.00
+            // 0x3068722291E90e7251D37b9b5Bc1E3D303885bb7,
+            0x3e46e4e203Bc6Aa3b3c6a2993C3cCEDeAF177f61,
             0x49e5c7645EaF21A531D933dE365ABDB01Ba3A2f6,
-            0xACce9487EcF6F32325ad612df0D1f1288653905A,
+            0x4Bd6300fc61Fa86b3d98A73CeE89bb54140b45e3,
+            0x5279d4F55096a427b9121c6D642395a4f0Cd04a4,
+            0x6068efCd7DEdDED2A8444cbb218ffE71fa022D08,
+            0x60C7d0B2cD22e9D20BE93f9EFFBabF15fd599936,
+            0x63d97917852e12F1591A39D20ba8a2547169B298,
+            0x7b1D81Ba131F551DA2f70f7c2363b45DbD451d83,
             0x84240C190FB0761527bA3A490BFe2e002413CDe4,
+            0x8e80410Ae2c5a394D1a81364fB932dF86Eb4992d,
+            // 696,582,491.30
+            // 0xA68D88522E06c226f1a3B9D04A86d4CdaCE666fE, 
+            0xac783aEA23528862E2e4E7c9F8Bbc65bfAFe33B3,
+            0xACce9487EcF6F32325ad612df0D1f1288653905A,
+            0xBD34Dc3FBb661612AAbCADaf758Caa6E22787297,
+            0xC5DCb0A22551FbA93e260028813F0eef25bFfeA6,
+            0xD94A8E20CbDD95D050f1356259E18C4Dd10f661A,
+            0xdf99908D22D2F18B50E15D962E77666da4A04717,
+            0xe079E4AfB3FDd8F02B29C7A333D526b9c4C94B23,
+            0xE63cE53A4Ed7B5180311143AA3FE9131b4E0AB88,
+            0xEaF85B68ce6AC308946580b907C4f84d0Abb07ee,
             0xeE6343ED1b521440A3c952FCAAA1E487a0403DbC,
-            0x147EC80822AFD4C6bC13aC116Ce3ae886099AB47
+            0xF52eB9b90C0CE6B037381aEa62BfA7A1B5519D31
         ];
 
         _grantRole(DEFAULT_ADMIN_ROLE, dao_);
@@ -121,6 +123,24 @@ contract DFVVesting is IDFVVesting, AccessControl {
                 ++i;
             }
         }
+
+        _createCategoryPool(
+            CreateCategoryPoolParams({
+                category: VestingCategory.BlindBelievers1,
+                beneficiary: 0x3068722291E90e7251D37b9b5Bc1E3D303885bb7,
+                multiplierOrAmount: 1, // 694,195,000.00 
+                start: 0
+            })
+        );
+
+        _createCategoryPool(
+            CreateCategoryPoolParams({
+                category: VestingCategory.BlindBelievers2,
+                beneficiary: 0xA68D88522E06c226f1a3B9D04A86d4CdaCE666fE,
+                multiplierOrAmount: 1, // 696,582,491.30
+                start: 0
+            })
+        );
 
         initialized = true;
     }
@@ -224,43 +244,37 @@ contract DFVVesting is IDFVVesting, AccessControl {
     /// @notice Internal function to initialize the vesting categories with their rules
     /// @dev This function sets up the initial rules for each vesting category
     function _initializeCategories() internal {
+        // Blind Believers = 20,828,377,491.30 = approx. ~15% of total supply
+
+        // Blind Believers
         categories[VestingCategory.BlindBelievers] = CategoryRules({
-            totalVestedAmountLeft: 20_826_000_000 * 1e18, // 15% of total supply
+            totalVestedAmountLeft: 694_200_000 * 28 * 1e18,
             qty: 694_200_000 * 1e18,
-            beneficiariesLeft: 30,
-            schedule: Schedule({cliffDuration: 0, periodDuration: 1 seconds, periodCount: 31_104_000}),
+            beneficiariesLeft: 28,
+            // 1 year cliff = 60 * 60 * 24 * 365s, 5 years vesting = 60 * 60 * 24 * 365 * 5s
+            schedule: Schedule({cliffDuration: 31_536_000, periodDuration: 1 seconds, periodCount: 157_680_000}),
             initialUnlockPercent: 0
         });
 
-        categories[VestingCategory.EternalHODLers] = CategoryRules({
-            totalVestedAmountLeft: 13_884_000_000 * 1e18, // 10% of total supply
-            qty: 69_420_000 * 1e18,
-            beneficiariesLeft: 200,
-            schedule: Schedule({cliffDuration: 0, periodDuration: 1 minutes, periodCount: 518_400}),
+        // special case for Blind Believers 0x3068722291E90e7251D37b9b5Bc1E3D303885bb7
+        // 694,195,000.00
+        categories[VestingCategory.BlindBelievers1] = CategoryRules({
+            totalVestedAmountLeft: 694_195_000 * 1e18,
+            qty: 694_195_000 * 1e18,
+            beneficiariesLeft: 1,
+            // 1 year cliff = 60 * 60 * 24 * 365s, 5 years vesting = 60 * 60 * 24 * 365 * 5s
+            schedule: Schedule({cliffDuration: 31_536_000, periodDuration: 1 seconds, periodCount: 157_680_000}),
             initialUnlockPercent: 0
         });
 
-        categories[VestingCategory.DiamondHands] = CategoryRules({
-            totalVestedAmountLeft: 6_942_000_000 * 1e18, // 5% of total supply
-            qty: 6_942_000 * 1e18,
-            beneficiariesLeft: 1000,
-            schedule: Schedule({cliffDuration: 0, periodDuration: 5 minutes, periodCount: 103_680}),
-            initialUnlockPercent: 0
-        });
-
-        categories[VestingCategory.JustHODLers] = CategoryRules({
-            totalVestedAmountLeft: 13_884_000_000 * 1e18, // 10% of total supply
-            qty: 694_200 * 1e18,
-            beneficiariesLeft: 20000,
-            schedule: Schedule({cliffDuration: 0, periodDuration: 1 hours, periodCount: 8_640}),
-            initialUnlockPercent: 0
-        });
-
-        categories[VestingCategory.CommunityAirdrop] = CategoryRules({
-            totalVestedAmountLeft: 13_884_000_000 * 1e18, // 10% of total supply
-            qty: 0,
-            beneficiariesLeft: 10000,
-            schedule: Schedule({cliffDuration: 0, periodDuration: 1 seconds, periodCount: 31_104_000}),
+        // special case for Blind Believers 0xA68D88522E06c226f1a3B9D04A86d4CdaCE666fE
+        // 696,582,491.30
+        categories[VestingCategory.BlindBelievers2] = CategoryRules({
+            totalVestedAmountLeft: 696_582_491_3 * 1e17,
+            qty: 696_582_491_3 * 1e17,
+            beneficiariesLeft: 1,
+            // 1 year cliff = 60 * 60 * 24 * 365s, 5 years vesting = 60 * 60 * 24 * 365 * 5s
+            schedule: Schedule({cliffDuration: 31_536_000, periodDuration: 1 seconds, periodCount: 157_680_000}),
             initialUnlockPercent: 0
         });
     }
@@ -272,9 +286,7 @@ contract DFVVesting is IDFVVesting, AccessControl {
     function _createCategoryPool(CreateCategoryPoolParams memory params_) internal {
         CategoryRules storage category = categories[params_.category];
 
-        uint256 amount = params_.category != VestingCategory.CommunityAirdrop
-            ? category.qty * params_.multiplierOrAmount
-            : params_.multiplierOrAmount;
+        uint256 amount = category.qty * params_.multiplierOrAmount;
 
         require(category.beneficiariesLeft != 0, CategoryBeneficiariesAllSet(params_.category));
         require(category.totalVestedAmountLeft >= amount, NotEnoughAllocationLeft(params_.category));
