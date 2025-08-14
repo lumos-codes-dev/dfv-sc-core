@@ -53,16 +53,7 @@ describe("DFVDAO", function () {
     dfvVesting = await DFVVestingFactory.deploy(timeLock.target, owner.address);
     await dfvVesting.waitForDeployment();
 
-    dfvToken = await DFVTokenFactory.deploy(
-      dfvVesting.target,
-      owner.address,
-      owner.address,
-      owner.address,
-      owner.address,
-      owner.address,
-      owner.address,
-      owner.address
-    );
+    dfvToken = await DFVTokenFactory.deploy(dfvVesting.target, owner.address, owner.address);
     await dfvToken.waitForDeployment();
 
     await dfvVesting.setVestingToken(dfvToken.target);
@@ -404,11 +395,11 @@ describe("DFVDAO", function () {
           amount: VESTING_AMOUNT,
           start: vestingStartTime,
           schedule: {
-              cliffDuration: 0,
-              periodDuration: 1,
-              periodCount: 31_104_000, // 12 months
-            },
-          initialUnlockPercent: 0
+            cliffDuration: 0,
+            periodDuration: 1,
+            periodCount: 31_104_000, // 12 months
+          },
+          initialUnlockPercent: 0,
         },
       ]);
 

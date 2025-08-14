@@ -205,6 +205,12 @@ npx hardhat run scripts/deploy/sepolia.ts --network sepolia
 npx hardhat run scripts/deploy/mainnet.ts --network ethereum
 ```
 
+### Base Mainnet
+
+```bash
+npx hardhat run scripts/deploy/base.ts --network base
+```
+
 ### Supported Networks
 
 - `hardhat` (local development)

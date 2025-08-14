@@ -25,16 +25,7 @@ describe("DFVVesting", function () {
     dfvVesting = await DFVVestingFactory.deploy(owner.address, owner.address);
     await dfvVesting.waitForDeployment();
 
-    dfvToken = await DFVTokenFactory.deploy(
-      dfvVesting.target,
-      owner.address,
-      owner.address,
-      owner.address,
-      owner.address,
-      owner.address,
-      owner.address,
-      owner.address
-    );
+    dfvToken = await DFVTokenFactory.deploy(dfvVesting.target, owner.address, owner.address);
     await dfvToken.waitForDeployment();
 
     await dfvVesting.setVestingToken(dfvToken.target);
@@ -92,16 +83,7 @@ describe("DFVVesting", function () {
       await newDfvVesting.waitForDeployment();
 
       const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
-      newToken = await DFVTokenFactory.deploy(
-        dfvVesting.target,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address
-      );
+      newToken = await DFVTokenFactory.deploy(dfvVesting.target, owner.address, owner.address);
       await newToken.waitForDeployment();
     });
 
@@ -136,16 +118,7 @@ describe("DFVVesting", function () {
       await newDfvVesting.setVestingToken(await newToken.getAddress());
 
       const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
-      const anotherToken = await DFVTokenFactory.deploy(
-        dfvVesting.target,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address
-      );
+      const anotherToken = await DFVTokenFactory.deploy(dfvVesting.target, owner.address, owner.address);
       await anotherToken.waitForDeployment();
 
       await expect(newDfvVesting.setVestingToken(await anotherToken.getAddress())).to.be.revertedWithCustomError(
@@ -303,16 +276,7 @@ describe("DFVVesting", function () {
       await newVesting.waitForDeployment();
 
       const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
-      const newToken = await DFVTokenFactory.deploy(
-        dfvVesting.target,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address
-      );
+      const newToken = await DFVTokenFactory.deploy(dfvVesting.target, owner.address, owner.address);
       await newToken.waitForDeployment();
 
       await newVesting.setVestingToken(await newToken.getAddress());
@@ -425,16 +389,7 @@ describe("DFVVesting", function () {
       await newVesting.waitForDeployment();
 
       const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
-      const newToken = await DFVTokenFactory.deploy(
-        dfvVesting.target,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address
-      );
+      const newToken = await DFVTokenFactory.deploy(dfvVesting.target, owner.address, owner.address);
       await newToken.waitForDeployment();
 
       await newVesting.setVestingToken(await newToken.getAddress());
@@ -475,16 +430,7 @@ describe("DFVVesting", function () {
       await newVesting.waitForDeployment();
 
       const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
-      const newToken = await DFVTokenFactory.deploy(
-        dfvVesting.target,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address
-      );
+      const newToken = await DFVTokenFactory.deploy(dfvVesting.target, owner.address, owner.address);
       await newToken.waitForDeployment();
 
       await newVesting.setVestingToken(await newToken.getAddress());
@@ -778,16 +724,7 @@ describe("DFVVesting", function () {
 
     it("Should allow withdrawal of different tokens without vesting deduction", async function () {
       const OtherTokenFactory = await ethers.getContractFactory("DFVToken");
-      const otherToken = await OtherTokenFactory.deploy(
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address,
-        owner.address
-      );
+      const otherToken = await OtherTokenFactory.deploy(owner.address, owner.address, owner.address);
       await otherToken.waitForDeployment();
 
       const amount = ethers.parseEther("1000");
