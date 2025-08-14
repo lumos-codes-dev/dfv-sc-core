@@ -36,7 +36,7 @@ async function main() {
   // Step 2: Deploy DFVVesting
   console.log("\n2. Deploying DFVVesting...");
   const DFVVestingFactory = await ethers.getContractFactory("DFVVesting");
-  const dfvVesting = await DFVVestingFactory.deploy(await timeLock.getAddress(), VESTING_MANAGER_ADDRESS);
+  const dfvVesting = await DFVVestingFactory.deploy(deployer.address, VESTING_MANAGER_ADDRESS);
   await dfvVesting.waitForDeployment();
   console.log("DFVVesting deployed to:", await dfvVesting.getAddress());
 

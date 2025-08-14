@@ -43,18 +43,10 @@ This repository contains the core smart contracts for the DFV ecosystem, built o
 ### Token Distribution
 
 The DFVToken has a total supply of **138,840,000,000 DFV tokens** distributed as follows:
-
-- **50%** (69,420,000,000 tokens) → Vesting Contract for community distribution:
-  - Blind Believers: 15% (20,826,000,000 tokens)
-  - Eternal HODLers: 10% (13,884,000,000 tokens)
-  - Diamond Hands: 10% (13,884,000,000 tokens)
-  - Just HODLers: 10% (13,884,000,000 tokens)
-  - Community Airdrop: 5% (6,942,000,000 tokens)
-- **48.5%** (67,337,400,000 tokens) → Treasury (Uniswap Community Pool)
-- **0.5%** (694,200,000 tokens) → Team
-- **0.5%** (694,200,000 tokens) → Venture Capital
-- **0.5%** (694,200,000 tokens) → Treasury Reserve
-
+- Blind Believers: approx. 15% (20,828,377,491.30 tokens)
+- UNI V3 DFV/USDT: approx. 84.51% (117,334,651,306.91 tokens)
+- DAO Treasury: approx. 0.35% (491,353,345.96	tokens)
+- Community purchases: approx. 0.13% (185,617,855.83 tokens)
 ---
 
 <a id="architecture"></a>
@@ -167,10 +159,14 @@ npm install
    Create a `.env` file in the root directory:
 
 ```env
-PRIVATE_KEY=your_private_key_here
-SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
-ETHERSCAN_API_KEY=your_etherscan_api_key
-COINMARKETCAP_API_KEY=your_coinmarketcap_api_key
+PRIVATE_KEY="your_private_key_here";
+
+MAINNET_RPC_URL="https://ethereum-rpc.publicnode.com";
+BASE_RPC_URL="https://mainnet.base.org";
+SEPOLIA_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com";
+
+ETHERSCAN_API_KEY="";
+COINMARKETCAP_API_KEY="";
 ```
 
 4. **Compile contracts:**
@@ -322,10 +318,9 @@ The DFVToken contract implements a governance token with voting capabilities, pe
 
 | Parameter   | Type    | Description                                       |
 | ----------- | ------- | ------------------------------------------------- |
-| `vesting_`  | address | Vesting contract address (receives 50% of tokens) |
-| `treasury_` | address | Treasury address (receives 48.5% of tokens)       |
-| `team_`     | address | Team address (receives 0.5% of tokens)            |
-| `vc_`       | address | Venture capital address (receives 0.5% of tokens) |
+| `vesting_`  | address | Vesting contract address (receives ~15% of tokens) |
+| `uni_`      | address | Treasury address (receives ~84.51% of tokens)       |
+| `dao_`      | address | DAO Treasury address (receives ~0.35% of tokens)            |
 
 #### Key Functions
 
