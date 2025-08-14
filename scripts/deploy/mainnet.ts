@@ -8,7 +8,7 @@ async function main() {
   console.log("Deploying with account:", deployer.address);
   console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "ETH\n");
 
-  const VESTING_MANAGER_ADDRESS = "0xdF80e38699bb963a91c5F04F83378A597995932a"; // ! Need to specify
+  const VESTING_MANAGER_ADDRESS = "0xF5D46bDe4dC092aa637A7A04212Acb7aB030fa32"; // ! Need to specify
 
   const UNI_ADDRESS = "0xdF80e38699bb963a91c5F04F83378A597995932a";
   // vesting is defined during deployment
