@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 import hre from "hardhat";
 
 async function main() {
-  console.log("Starting DFVDAO deployment to Mainnet...\n");
+  console.log("Starting DFVDAO deployment to Base...\n");
 
   const [deployer, ...addrs] = await ethers.getSigners();
   console.log("Deploying with account:", deployer.address);
@@ -92,36 +92,36 @@ async function main() {
   console.log("Quorum:", QUORUM_PERCENTAGE, "%");
   console.log("Timelock Delay:", MIN_DELAY, "seconds (", MIN_DELAY / 3600, "hours)");
 
-  // Step 8: Verify contracts on Etherscan
-  // Note: Make sure ETHERSCAN_API_KEY is set in your .env file
-  // You can get a free API key from https://etherscan.io/apis
-  console.log("\n=== VERIFYING CONTRACTS ON ETHERSCAN ===");
-  console.log("Note: This requires ETHERSCAN_API_KEY to be set in .env file");
+  // Step 8: Verify contracts on BASESCAN
+  // Note: Make sure BASESCAN_API_KEY is set in your .env file
+  // You can get a free API key from https://basescan.org/apis
+  console.log("\n=== VERIFYING CONTRACTS ON BASESCAN ===");
+  console.log("Note: This requires BASESCAN_API_KEY to be set in .env file");
 
-  if (!process.env.ETHERSCAN_API_KEY) {
-    console.log("⚠️  ETHERSCAN_API_KEY not found in environment variables");
-    console.log("Skipping Etherscan verification. You can verify manually later.");
-    console.log("Get your API key from: https://etherscan.io/apis");
+  if (!process.env.BASESCAN_API_KEY) {
+    console.log("⚠️  BASESCAN_API_KEY not found in environment variables");
+    console.log("Skipping BASESCAN verification. You can verify manually later.");
+    console.log("Get your API key from: https://basescan.org/apis");
 
     console.log("\n📋 Manual verification commands:");
     console.log(
-      `npx hardhat verify --network ethereum ${await timeLock.getAddress()} ${MIN_DELAY} "[]" "[]" "${
+      `npx hardhat verify --network base ${await timeLock.getAddress()} ${MIN_DELAY} "[]" "[]" "${
         deployer.address
       }"`
     );
     console.log(
-      `npx hardhat verify --network ethereum ${await dfvVesting.getAddress()} "${await timeLock.getAddress()}" "${VESTING_MANAGER_ADDRESS}"`
+      `npx hardhat verify --network base ${await dfvVesting.getAddress()} "${await timeLock.getAddress()}" "${VESTING_MANAGER_ADDRESS}"`
     );
     console.log(
-      `npx hardhat verify --network ethereum ${await dfvToken.getAddress()} "${dfvVesting.target}" "${UNI_ADDRESS}" "${DAO_TREASURY_ADDRESS}"`
+      `npx hardhat verify --network base ${await dfvToken.getAddress()} "${dfvVesting.target}" "${UNI_ADDRESS}" "${DAO_TREASURY_ADDRESS}"`
     );
     console.log(
-      `npx hardhat verify --network ethereum ${await dfvDAO.getAddress()} "${await dfvToken.getAddress()}" "${await timeLock.getAddress()}" ${VOTING_DELAY} ${VOTING_PERIOD} "${PROPOSAL_THRESHOLD.toString()}" ${QUORUM_PERCENTAGE}`
+      `npx hardhat verify --network base ${await dfvDAO.getAddress()} "${await dfvToken.getAddress()}" "${await timeLock.getAddress()}" ${VOTING_DELAY} ${VOTING_PERIOD} "${PROPOSAL_THRESHOLD.toString()}" ${QUORUM_PERCENTAGE}`
     );
   } else {
     try {
-      // Wait a bit for the contracts to be indexed by Etherscan
-      console.log("Waiting for Etherscan to index the contracts...");
+      // Wait a bit for the contracts to be indexed by BASESCAN
+      console.log("Waiting for BASESCAN to index the contracts...");
       await new Promise((resolve) => setTimeout(resolve, 30000)); // Wait 30 seconds
 
       // Verify TimeLock
@@ -136,10 +136,10 @@ async function main() {
             deployer.address, // admin
           ],
         });
-        console.log("✅ TimeLock verified on Etherscan");
+        console.log("✅ TimeLock verified on BASESCAN");
       } catch (error: any) {
         if (error.message.includes("Already Verified")) {
-          console.log("✅ TimeLock already verified on Etherscan");
+          console.log("✅ TimeLock already verified on BASESCAN");
         } else {
           console.log("❌ TimeLock verification failed:", error.message);
         }
@@ -155,10 +155,10 @@ async function main() {
             VESTING_MANAGER_ADDRESS, // vestingManager
           ],
         });
-        console.log("✅ DFVVesting verified on Etherscan");
+        console.log("✅ DFVVesting verified on BASESCAN");
       } catch (error: any) {
         if (error.message.includes("Already Verified")) {
-          console.log("✅ DFVVesting already verified on Etherscan");
+          console.log("✅ DFVVesting already verified on BASESCAN");
         } else {
           console.log("❌ DFVVesting verification failed:", error.message);
         }
@@ -171,10 +171,10 @@ async function main() {
           address: await dfvToken.getAddress(),
           constructorArguments: [dfvVesting.target, UNI_ADDRESS, DAO_TREASURY_ADDRESS],
         });
-        console.log("✅ DFVToken verified on Etherscan");
+        console.log("✅ DFVToken verified on BASESCAN");
       } catch (error: any) {
         if (error.message.includes("Already Verified")) {
-          console.log("✅ DFVToken already verified on Etherscan");
+          console.log("✅ DFVToken already verified on BASESCAN");
         } else {
           console.log("❌ DFVToken verification failed:", error.message);
         }
@@ -194,18 +194,18 @@ async function main() {
             QUORUM_PERCENTAGE,
           ],
         });
-        console.log("✅ DFVDAO verified on Etherscan");
+        console.log("✅ DFVDAO verified on BASESCAN");
       } catch (error: any) {
         if (error.message.includes("Already Verified")) {
-          console.log("✅ DFVDAO already verified on Etherscan");
+          console.log("✅ DFVDAO already verified on BASESCAN");
         } else {
           console.log("❌ DFVDAO verification failed:", error.message);
         }
       }
 
-      console.log("\n🎉 Etherscan verification process completed!");
+      console.log("\n🎉 BASESCAN verification process completed!");
     } catch (error) {
-      console.error("\n❌ General error during Etherscan verification:", error);
+      console.error("\n❌ General error during BASESCAN verification:", error);
       console.log("You can manually verify the contracts later using the following constructor arguments:");
 
       console.log("\nTimeLock constructor arguments:");
@@ -231,13 +231,13 @@ async function main() {
       console.log("- proposalThreshold:", PROPOSAL_THRESHOLD.toString());
       console.log("- quorumPercentage:", QUORUM_PERCENTAGE);
     }
-  } // Close the if statement for ETHERSCAN_API_KEY check
+  } // Close the if statement for BASESCAN_API_KEY check
 
-  console.log("\n=== ETHERSCAN LINKS ===");
-  console.log("TimeLock:", `https://etherscan.io/address/${await timeLock.getAddress()}`);
-  console.log("DFVVesting:", `https://etherscan.io/address/${await dfvVesting.getAddress()}`);
-  console.log("DFVToken:", `https://etherscan.io/address/${await dfvToken.getAddress()}`);
-  console.log("DFVDAO:", `https://etherscan.io/address/${await dfvDAO.getAddress()}`);
+  console.log("\n=== BASESCAN LINKS ===");
+  console.log("TimeLock:", `https://basescan.org/address/${await timeLock.getAddress()}`);
+  console.log("DFVVesting:", `https://basescan.org/address/${await dfvVesting.getAddress()}`);
+  console.log("DFVToken:", `https://basescan.org/address/${await dfvToken.getAddress()}`);
+  console.log("DFVDAO:", `https://basescan.org/address/${await dfvDAO.getAddress()}`);
 
   console.log("\nDeployment completed successfully!");
 }

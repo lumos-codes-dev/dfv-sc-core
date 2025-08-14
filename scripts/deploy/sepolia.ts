@@ -12,7 +12,7 @@ async function main() {
 
   const UNI_ADDRESS = "0x0BcfB8821e6E78958bcA048dBb1B0CA0a7bb27e3";
   // vesting is defined during deployment
-  const DAO = "0x0BcfB8821e6E78958bcA048dBb1B0CA0a7bb27e3";
+  const DAO_TREASURY_ADDRESS = "0x0BcfB8821e6E78958bcA048dBb1B0CA0a7bb27e3";
 
   const VOTING_DELAY = 60; // 1 minute in seconds
   const VOTING_PERIOD = 600; // 10 minutes in seconds
@@ -42,7 +42,7 @@ async function main() {
   // Step 3: Deploy DFVToken
   console.log("\n3. Deploying DFVToken...");
   const DFVTokenFactory = await ethers.getContractFactory("DFVToken");
-  const dfvToken = await DFVTokenFactory.deploy(dfvVesting.target, UNI_ADDRESS, DAO);
+  const dfvToken = await DFVTokenFactory.deploy(dfvVesting.target, UNI_ADDRESS, DAO_TREASURY_ADDRESS);
   await dfvToken.waitForDeployment();
   console.log("DFVToken deployed to:", await dfvToken.getAddress());
   console.log("Total supply:", ethers.formatEther(await dfvToken.totalSupply()), "DFV");
@@ -112,9 +112,7 @@ async function main() {
       }" "${VESTING_MANAGER_ADDRESS}"`
     );
     console.log(
-      `npx hardhat verify --network sepolia ${await dfvToken.getAddress()} "${
-        dfvVesting.target
-      }" "${UNI_ADDRESS}" "${ETERNAL_HODLERS_ADDRESS}" "${JUST_HODLERS_ADDRESS}" "${AIRDROP_ADDRESS}" "${DIAMOND_HANDS_ADDRESS}" "${TREASURY_ADDRESS}" "${DAO}"`
+      `npx hardhat verify --network sepolia ${await dfvToken.getAddress()} "${dfvVesting.target}" "${UNI_ADDRESS}" "${DAO_TREASURY_ADDRESS}"`
     );
 
     console.log(
@@ -174,12 +172,7 @@ async function main() {
           constructorArguments: [
             UNI_ADDRESS,
             dfvVesting.target,
-            ETERNAL_HODLERS_ADDRESS,
-            JUST_HODLERS_ADDRESS,
-            AIRDROP_ADDRESS,
-            DIAMOND_HANDS_ADDRESS,
-            TREASURY_ADDRESS,
-            DAO,
+            DAO_TREASURY_ADDRESS,
           ],
         });
         console.log("✅ DFVToken verified on Etherscan");
@@ -231,9 +224,8 @@ async function main() {
 
       console.log("\nDFVToken constructor arguments:");
       console.log("- vestingContract:", dfvVesting.target);
-      console.log("- treasury:", TREASURY_ADDRESS);
-      console.log("- team:", TEAM_ADDRESS);
-      console.log("- vc:", VC_ADDRESS);
+      console.log("- liquidity pool:", UNI_ADDRESS);
+      console.log("- DAO Treasury:", DAO_TREASURY_ADDRESS);
 
       console.log("\nDFVDAO constructor arguments:");
       console.log("- token:", await dfvToken.getAddress());
