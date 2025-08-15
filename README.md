@@ -156,23 +156,25 @@ npm install
 ```
 
 3. **Configure environment variables:**
-   Create a `.env` file in the root directory:
+   Copy `.env.example` to `.env` and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
 
 ```env
-PRIVATE_KEY="your_private_key_here";
-
-MAINNET_RPC_URL="https://ethereum-rpc.publicnode.com";
-BASE_RPC_URL="https://mainnet.base.org";
-SEPOLIA_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com";
-
-ETHERSCAN_API_KEY="";
-COINMARKETCAP_API_KEY="";
+PRIVATE_KEY=your_private_key_here
+SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+ETHERSCAN_API_KEY=your_etherscan_api_key
+COINMARKETCAP_API_KEY=your_coinmarketcap_api_key
 ```
 
 4. **Compile contracts:**
 
 ```bash
-npm run compile
+npx hardhat compile
 ```
 
 ---
@@ -212,6 +214,20 @@ npx hardhat run scripts/deploy/base.ts --network base
 - `hardhat` (local development)
 - `sepolia` (Ethereum testnet)
 - `ethereum` (Ethereum mainnet)
+- `base` (Base mainnet)
+
+### Verification
+
+To verify deployed contracts on Etherscan:
+
+```bash
+npx hardhat verify --network sepolia <contract_address> <constructor_arg1> <constructor_arg2>
+```
+
+**Example for DFVToken:**
+```bash
+npx hardhat verify --network sepolia 0xYourTokenAddress 0xVestingAddress 0xUniAddress 0xDAOAddress
+```
 
 ---
 
@@ -318,9 +334,9 @@ The DFVToken contract implements a governance token with voting capabilities, pe
 
 | Parameter   | Type    | Description                                       |
 | ----------- | ------- | ------------------------------------------------- |
-| `vesting_`  | address | Vesting contract address (receives ~15% of tokens) |
-| `uni_`      | address | Treasury address (receives ~84.51% of tokens)       |
-| `dao_`      | address | DAO Treasury address (receives ~0.35% of tokens)            |
+| `vesting_`  | address | Vesting contract address (receives 15% of tokens) |
+| `uni_`      | address | Uniswap V3 pool address (receives 84.51% of tokens) |
+| `dao_`      | address | DAO treasury address (receives 0.35% of tokens)    |
 
 #### Key Functions
 
@@ -370,16 +386,15 @@ The DFVVesting contract manages token vesting for different beneficiary categori
 
 | Category          | Allocation          | Tokens per User | Max Participants |
 | ----------------- | ------------------- | --------------- | ---------------- |
-| Blind Believers   | 15% (20.83B tokens) | 694.2M tokens   | 30               |
-| Eternal HODLers   | 10% (13.88B tokens) | 69.42M tokens   | 200              |
-| Diamond Hands     | 5% (6.94B tokens)   | 6.942M tokens   | 1,000            |
-| Just HODLers      | 10% (13.88B tokens) | 694.2K tokens   | 20,000           |
-| Community Airdrop | 10% (13.88B tokens) | Variable amount | 10,000           |
+| Blind Believers   | 15% (20.83B tokens) | 694.2M tokens   | 28               |
+| BlindBelievers1   | Special allocation  | 694.195M tokens | 1                |
+| BlindBelievers2   | Special allocation  | 696.582M tokens | 1                |
 
 **Vesting Details:**
 
-- **Linear Vesting**: Tokens are released gradually over the vesting period
-- **Total Vesting Duration**: Approximately 1 year (31,104,000 seconds) for most categories
+- **Cliff Period**: 1 year (31,536,000 seconds)
+- **Vesting Duration**: 5 years (157,680,000 seconds) with 1-second periods
+- **Initial Unlock**: 0% (no immediate unlock after cliff)
 
 #### Administrative Functions
 
